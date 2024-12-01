@@ -115,7 +115,7 @@ const handleAmountBlur = (event: Event) => {
       </p>
       <RouterLink
         to="/vehicles/add"
-        class="inline-block bg-yellow-500 text-white py-2 px-4 rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+        class="inline-flex justify-center py-2 px-6 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500"
       >
         Thêm xe mới
       </RouterLink>
@@ -217,11 +217,11 @@ const handleAmountBlur = (event: Event) => {
       </div>
 
       <!-- Submit button -->
-      <div>
+      <div class="flex justify-center">
         <button
           type="submit"
           :disabled="isSubmitting"
-          class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+          class="inline-flex justify-center py-2 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
         >
           <slot name="submit-text">
             {{ isSubmitting ? "Đang lưu..." : "Lưu giao dịch" }}

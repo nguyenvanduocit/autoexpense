@@ -63,7 +63,7 @@ const chartData = computed(() => {
 
 const getDateRange = computed(() => {
   const now = new Date()
-  const start = new Date(now.getFullYear(), now.getMonth() - 2, 1)
+  const start = new Date(now.getFullYear(), now.getMonth() - 3, 1)
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
   
   return [start.toISOString().split('T')[0], end.toISOString().split('T')[0]]
@@ -131,14 +131,13 @@ const chartOption = computed(() => {
       top: 80,
       left: 40,
       right: 40,
-      cellSize: ['auto', 25],
       range: getDateRange.value,
       itemStyle: {
         borderWidth: 0.5
       },
       yearLabel: { show: false },
       dayLabel: {
-        nameMap: 'vi'
+        show: false
       }
     },
     series: {
@@ -164,7 +163,7 @@ const chartOption = computed(() => {
 .expense-heatmap {
   width: 100%;
   height: 300px;
-  padding: 1rem;
+  padding-top: 1rem;
 }
 
 .chart {

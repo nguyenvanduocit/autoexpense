@@ -119,11 +119,11 @@ const handleSubmit = () => {
     </div>
 
     <!-- Submit button -->
-    <div>
+    <div class="flex justify-center">
       <button
         type="submit"
         :disabled="isSubmitting"
-        class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+        class="inline-flex justify-center py-2 px-6 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
       >
         {{ isSubmitting ? "Đang lưu..." : "Lưu thông tin xe" }}
       </button>

@@ -102,7 +102,7 @@ const chartOption = computed(() => ({
 
 <template>
   <div class="expense-analysis">
-    <div class="mb-4">
+    <div class="p-4">
       <TimeRangeFilter v-model="timeRange" />
     </div>
     
@@ -114,11 +114,10 @@ const chartOption = computed(() => ({
 .expense-analysis {
   width: 100%;
   height: 400px;
-  padding: 1rem;
 }
 
 .chart {
   width: 100%;
-  height: calc(100% - 48px); /* Trừ đi chiều cao của TimeRangeFilter */
+  height: calc(100% - 61px);
 }
 </style> 

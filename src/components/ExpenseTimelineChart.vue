@@ -74,7 +74,7 @@ const chartData = computed(() => {
   filteredTransactions.value
     .filter(transaction => transaction && transaction.date && transaction.category)
     .forEach(transaction => {
-      const date = new Date(transaction.date).toLocaleDateString()
+      const date = new Date(transaction.date).toLocaleDateString(navigator.language)
       const existing = dateMap.get(date) || Object.fromEntries(
         categories.map(c => [c, 0])
       ) as Record<ExpenseCategory, number>
@@ -107,7 +107,7 @@ const chartOption = computed(() => ({
       let result = `${params[0].axisValue}<br/>`
       params.forEach((param: any) => {
         if (param && param.value !== null) {
-          result += `${param.seriesName}: ${param.value?.toLocaleString() || 0} VND<br/>`
+          result += `${param.seriesName}: ${param.value?.toLocaleString(navigator.language) || 0} VND<br/>`
         }
       })
       return result
@@ -129,7 +129,7 @@ const chartOption = computed(() => ({
     type: 'category',
     data: Array.from(new Set(filteredTransactions.value
       .filter(t => t && t.date)
-      .map(t => new Date(t.date).toLocaleDateString())
+      .map(t => new Date(t.date).toLocaleDateString(navigator.language))
     ))
   },
   yAxis: {
@@ -141,7 +141,7 @@ const chartOption = computed(() => ({
 
 <template>
   <div class="expense-timeline">
-    <div class="mb-4">
+    <div class="p-4">
       <TimeRangeFilter v-model="timeRange" />
     </div>
     
@@ -153,11 +153,10 @@ const chartOption = computed(() => ({
 .expense-timeline {
   width: 100%;
   height: 400px;
-  padding: 1rem;
 }
 
 .chart {
   width: 100%;
-  height: calc(100% - 48px);
+  height: calc(100% - 61px);
 }
 </style> 

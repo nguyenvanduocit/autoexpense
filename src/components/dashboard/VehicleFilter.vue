@@ -33,7 +33,7 @@ const toggleDropdown = (vehicleId: string) => {
       class="bg-white rounded-lg shadow p-3 cursor-pointer transition-all hover:shadow-md"
       :class="{ 'ring-2 ring-blue-500': selectedVehicleId === null }"
     >
-      <h3 class="font-medium text-center text-sm">Tất cả xe</h3>
+      <span class="font-medium text-center text-sm">Tất cả xe</span>
     </div>
     <div
       v-for="vehicle in vehicles"
@@ -43,7 +43,7 @@ const toggleDropdown = (vehicleId: string) => {
     >
       <div class="flex justify-between items-center">
         <div @click="emit('update:selectedVehicleId', vehicle.id)" class="flex-1">
-          <h3 class="font-medium text-center text-sm">{{ vehicle.brand }} {{ vehicle.model }}</h3>
+          <span class="font-medium text-center text-sm">{{ vehicle.brand }} {{ vehicle.model }}</span>
         </div>
         <div class="relative">
           <button
