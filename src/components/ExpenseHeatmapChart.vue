@@ -155,20 +155,20 @@ const chartOption = computed(() => {
     <v-chart 
       class="chart" 
       :option="chartOption" 
-      :autoresize="true"
+      autoresize
     />
   </div>
 </template>
 
 <style scoped>
 .expense-heatmap {
-  padding: 1rem;
   width: 100%;
-  aspect-ratio: 16/5;
+  height: 300px;
+  padding: 1rem;
 }
 
 .chart {
   width: 100%;
-  height: 100% !important;
+  height: 100%;
 }
 </style> 
