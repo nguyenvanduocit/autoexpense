@@ -87,7 +87,6 @@ const chartOption = computed(() => ({
       name: 'Chi phí theo danh mục',
       type: 'pie',
       radius: '50%',
-      center: ['60%', '50%'],
       data: chartData.value,
       emphasis: {
         itemStyle: {

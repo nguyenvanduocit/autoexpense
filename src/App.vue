@@ -4,7 +4,7 @@ import { useAuth } from "./composables/useAuth";
 import LoginView from "./views/LoginView.vue";
 
 const router = useRouter();
-const { isAuthenticated } = useAuth();
+const { isAuthenticated, isLoading } = useAuth();
 </script>
 
 <template>
@@ -50,8 +50,14 @@ const { isAuthenticated } = useAuth();
 
     <!-- Main content -->
     <main>
-      <RouterView v-if="isAuthenticated" />
-      <LoginView v-else />
+      <template v-if="!isLoading">
+        <RouterView v-if="isAuthenticated" />
+        <LoginView v-else />
+      </template>
+      <div v-else class="flex justify-center items-center h-screen">
+        <!-- Loading spinner -->
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
     </main>
   </div>
 </template>

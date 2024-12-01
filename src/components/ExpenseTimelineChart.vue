@@ -35,7 +35,7 @@ const props = defineProps<{
   }>
 }>()
 
-const timeRange = ref('month') // 'week', 'month', 'all'
+const timeRange = ref('quarter')
 
 const filteredTransactions = computed(() => {
   const now = new Date()
@@ -53,6 +53,14 @@ const filteredTransactions = computed(() => {
       return transactions.filter(t => {
         const date = new Date(t.date)
         return date >= startOfMonth && date <= endOfMonth
+      })
+    case 'quarter':
+      const currentQuarter = Math.floor(now.getMonth() / 3)
+      const startOfQuarter = new Date(now.getFullYear(), currentQuarter * 3, 1)
+      const endOfQuarter = new Date(now.getFullYear(), (currentQuarter + 1) * 3, 0)
+      return transactions.filter(t => {
+        const date = new Date(t.date)
+        return date >= startOfQuarter && date <= endOfQuarter
       })
     default:
       return transactions

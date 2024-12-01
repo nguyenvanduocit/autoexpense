@@ -1,43 +1,52 @@
 <script setup lang="ts">
-defineProps<{
-  modelValue: string
+type TimeRange = 'week' | 'month' | 'quarter' | 'all'
+
+const props = defineProps<{
+  modelValue: TimeRange
 }>()
 
-defineEmits<{
-  (e: 'update:modelValue', value: string): void
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: TimeRange): void
 }>()
+
+const options = [
+  { value: 'week' as TimeRange, label: 'This Week' },
+  { value: 'month' as TimeRange, label: 'This Month' },
+  { value: 'quarter' as TimeRange, label: 'This Quarter' },
+  { value: 'all' as TimeRange, label: 'All Time' }
+]
+
+const handleChange = (event: Event) => {
+  const value = (event.target as HTMLSelectElement).value as TimeRange
+  emit('update:modelValue', value)
+}
 </script>
 
 <template>
-  <div class="time-range-buttons">
-    <button 
-      @click="$emit('update:modelValue', 'week')"
-      :class="['time-btn', modelValue === 'week' ? 'active' : '']"
+  <div class="time-range-filter">
+    <select 
+      :value="modelValue"
+      @change="handleChange"
+      class="form-select"
     >
-      Tuần này
-    </button>
-    <button 
-      @click="$emit('update:modelValue', 'month')"
-      :class="['time-btn', modelValue === 'month' ? 'active' : '']"
-    >
-      Tháng này
-    </button>
-    <button 
-      @click="$emit('update:modelValue', 'all')"
-      :class="['time-btn', modelValue === 'all' ? 'active' : '']"
-    >
-      Tất cả
-    </button>
+      <option 
+        v-for="option in options" 
+        :key="option.value" 
+        :value="option.value"
+      >
+        {{ option.label }}
+      </option>
+    </select>
   </div>
 </template>
 
 <style scoped>
-.time-range-buttons {
+.time-range-filter {
   display: flex;
   gap: 0.5rem;
 }
 
-.time-btn {
+.form-select {
   padding: 0.25rem 0.75rem;
   border: 1px solid #e2e8f0;
   background-color: white;
@@ -47,11 +56,11 @@ defineEmits<{
   font-size: 0.875rem;
 }
 
-.time-btn:hover {
+.form-select:hover {
   background-color: #f8fafc;
 }
 
-.time-btn.active {
+.form-select.active {
   background-color: #3b82f6;
   color: white;
   border-color: #3b82f6;

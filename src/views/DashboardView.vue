@@ -25,11 +25,16 @@ const userId = auth.currentUser?.uid
 const selectedVehicle = ref<string | null>(null)
 
 // Use VueFire's useCollection to get realtime data
-const vehicles = useCollection<Vehicle>(collection(db, `users/${userId}/vehicles`))
+const { data: vehicles, pending: vehiclesPending } = useCollection<Vehicle>(collection(db, `users/${userId}/vehicles`))
 const transactions = useCollection<Transaction>(collection(db, `users/${userId}/transactions`))
 const reminders = useCollection<Reminder>(collection(db, `users/${userId}/reminders`))
 
-const hasVehicles = computed(() => vehicles.value?.length > 0)
+const isLoading = computed(() => vehiclesPending.value)
+
+const hasVehicles = computed(() => {
+  if (isLoading.value) return true
+  return vehicles.value?.length > 0
+})
 
 const filteredTransactions = computed(() => {
   if (!selectedVehicle.value) return transactions.value
@@ -112,12 +117,17 @@ const handlePageUpdate = (page: number) => {
 
 <template>
   <div class="p-4 sm:p-6 max-w-5xl mx-auto">
+    <!-- Loading state -->
+    <div v-if="isLoading" class="flex flex-col justify-center items-center min-h-[200px] gap-4">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <p class="text-gray-600 text-lg">Loading...</p>
+    </div>
+
     <!-- No vehicles message -->
-    <NoVehiclesMessage v-if="!hasVehicles" />
+    <NoVehiclesMessage v-else-if="!hasVehicles" />
 
     <!-- Dashboard content -->
     <template v-else>
-      <h1 class="text-2xl font-bold mb-4 sm:mb-6">Dashboard</h1>
 
       <!-- Stats Cards -->
       <StatsCards :stats="stats" />
