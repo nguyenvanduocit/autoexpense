@@ -82,14 +82,6 @@ const handleSubmit = async () => {
           </option>
         </select>
       </div>
-      <div class="flex-1 min-w-[120px]">
-        <input
-          v-model="date"
-          type="date"
-          class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-          required
-        >
-      </div>
       <div class="flex gap-2">
         <button
           type="submit"
