@@ -1,0 +1,25 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Kiểm tra user đã đăng nhập chưa
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Kiểm tra user ID trong path có khớp với user đang đăng nhập không
+    function isUserOwner(userId) {
+      return isAuthenticated() && userId == request.auth.uid;
+    }
+
+    // Rules cho collection users và subcollections
+    match /users/{userId}/{document=**} {
+      allow read, write: if isUserOwner(userId);
+    }
+
+    // Chặn truy cập trực tiếp vào root
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
