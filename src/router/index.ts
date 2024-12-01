@@ -5,6 +5,7 @@ import TransactionDetailsView from "../views/TransactionDetailsView.vue";
 import AddVehicleView from "../views/AddVehicleView.vue";
 import EditTransactionView from "../views/EditTransactionView.vue";
 import EditVehicleView from "../views/EditVehicleView.vue";
+import SettingsView from "../views/SettingsView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -38,6 +39,12 @@ const router = createRouter({
       path: "/vehicles/:id/edit",
       name: "edit-vehicle",
       component: EditVehicleView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/settings",
+      name: "settings",
+      component: SettingsView,
       meta: { requiresAuth: true },
     },
   ],

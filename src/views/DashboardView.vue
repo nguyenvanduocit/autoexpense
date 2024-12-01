@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { useCollection } from 'vuefire'
-import { collection, deleteDoc, doc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, query, where, getDocs } from 'firebase/firestore'
 import { useFirestore } from 'vuefire'
 import type { Transaction, DashboardStats, ExpenseCategory, Vehicle, Reminder } from "../types";
 import { useRouter } from "vue-router";
@@ -78,11 +78,23 @@ const confirmDelete = async () => {
   if (!vehicleToDelete.value) return
   
   try {
+    // 1. Xóa tất cả transactions của vehicle này
+    const vehicleTransactionsRef = collection(db, `users/${userId}/transactions`)
+    const q = query(vehicleTransactionsRef, where("vehicleId", "==", vehicleToDelete.value.id))
+    const querySnapshot = await getDocs(q)
+    
+    const deletePromises = querySnapshot.docs.map(doc => 
+      deleteDoc(doc.ref)
+    )
+    await Promise.all(deletePromises)
+
+    // 2. Xóa vehicle
     await deleteDoc(doc(db, `users/${userId}/vehicles/${vehicleToDelete.value.id}`))
+    
     showDeleteDialog.value = false
     vehicleToDelete.value = null
   } catch (error) {
-    console.error('Error deleting vehicle:', error)
+    console.error('Error deleting vehicle and its transactions:', error)
   }
 }
 
