@@ -8,6 +8,8 @@ export interface Transaction {
   attachments?: string[];
 }
 
+export type TimeRange = "week" | "month" | "quarter" | "all";
+
 export enum ExpenseCategory {
   Fuel = "Fuel",
   Maintenance = "Maintenance",

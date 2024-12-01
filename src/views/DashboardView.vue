@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, defineAsyncComponent } from "vue";
 import { useCollection } from 'vuefire'
 import { collection, deleteDoc, doc, query, where, getDocs } from 'firebase/firestore'
 import { useFirestore } from 'vuefire'
 import { useStorage } from '@vueuse/core'
 import type { Transaction, DashboardStats, ExpenseCategory, Vehicle, Reminder } from "../types";
 import { useRouter } from "vue-router";
-import ExpenseAnalysisChart from "../components/ExpenseAnalysisChart.vue";
 import { auth } from "../config/firebase";
 
 // Import new components
@@ -16,8 +15,17 @@ import RecentTransactions from "../components/dashboard/RecentTransactions.vue";
 import DeleteVehicleDialog from "../components/dashboard/DeleteVehicleDialog.vue";
 import NoVehiclesMessage from "../components/dashboard/NoVehiclesMessage.vue";
 import NoTransactionsMessage from "../components/dashboard/NoTransactionsMessage.vue";
-import ExpenseTimelineChart from "../components/ExpenseTimelineChart.vue";
-import ExpenseHeatmapChart from "../components/ExpenseHeatmapChart.vue";
+
+// Lazy load chart components
+const ExpenseTimelineChart = defineAsyncComponent(() => 
+  import("../components/ExpenseTimelineChart.vue")
+);
+const ExpenseAnalysisChart = defineAsyncComponent(() => 
+  import("../components/ExpenseAnalysisChart.vue")
+);
+const ExpenseHeatmapChart = defineAsyncComponent(() => 
+  import("../components/ExpenseHeatmapChart.vue")
+);
 
 const router = useRouter();
 const db = useFirestore()

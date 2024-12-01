@@ -14,7 +14,7 @@ import {
 import VChart from 'vue-echarts'
 import type { ExpenseCategory } from '../types'
 import TimeRangeFilter from './TimeRangeFilter.vue'
-
+import type { TimeRange } from '../types'
 use([
   CanvasRenderer,
   LineChart,
@@ -35,7 +35,7 @@ const props = defineProps<{
   }>
 }>()
 
-const timeRange = ref('quarter')
+const timeRange = ref<TimeRange>('month')
 
 const filteredTransactions = computed(() => {
   const now = new Date()

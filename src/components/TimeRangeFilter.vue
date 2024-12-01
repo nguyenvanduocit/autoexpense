@@ -1,13 +1,16 @@
 <script setup lang="ts">
-type TimeRange = 'week' | 'month' | 'quarter' | 'all'
-
-const props = defineProps<{
+import type { TimeRange } from '../types'
+defineProps<{
   modelValue: TimeRange
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: TimeRange): void
+  'update:modelValue': [value: TimeRange]
 }>()
+
+function updateTimeRange(value: TimeRange) {
+  emit('update:modelValue', value)
+}
 
 const options = [
   { value: 'week' as TimeRange, label: 'This Week' },
@@ -18,7 +21,7 @@ const options = [
 
 const handleChange = (event: Event) => {
   const value = (event.target as HTMLSelectElement).value as TimeRange
-  emit('update:modelValue', value)
+  updateTimeRange(value)
 }
 </script>
 

@@ -9,8 +9,14 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ["vue"],
+          'vendor-vue': ['vue', 'vue-router'],
+          'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'vuefire'],
+          'vendor-charts': ['echarts', 'vue-echarts'],
+          'vendor-utils': ['@vueuse/core'],
         },
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
       },
     },
   },
