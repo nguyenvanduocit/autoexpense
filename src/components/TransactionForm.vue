@@ -36,6 +36,40 @@ const showAddVehiclePrompt = computed(() => !isLoading.value && vehicles.value?.
 
 const expenseCategories = Object.values(ExpenseCategory);
 
+const categoryIcons: Record<ExpenseCategory, string> = {
+  [ExpenseCategory.Fuel]: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M3 22V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v14M3 10h12"/>
+    <path d="M15 4h1a2 2 0 0 1 2 2v3a2 2 0 0 0 2 2h0a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2"/>
+    <path d="M15 8a2 2 0 0 1 2-2"/>
+  </svg>`,
+  [ExpenseCategory.Maintenance]: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+  </svg>`,
+  [ExpenseCategory.Insurance]: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M12 2l7 4v6c0 5.5-3.8 10-7 12-3.2-2-7-6.5-7-12V6l7-4z"/>
+  </svg>`,
+  [ExpenseCategory.Other]: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="10"/>
+    <path d="M12 16v.01M12 8v4"/>
+  </svg>`,
+  [ExpenseCategory.Toll]: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M4 4h16v16H4z M4 12h16"/>
+  </svg>`,
+  [ExpenseCategory.Parking]: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M5 5h14v14H5zM9 5v14M9 12h6"/>
+  </svg>`,
+  [ExpenseCategory.Wash]: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M3 17h18M8 17c0-5 8-5 8-10"/>
+  </svg>`,
+  [ExpenseCategory.Accessories]: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M12 8v8M8 12h8"/>
+  </svg>`,
+  [ExpenseCategory.Fine]: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M12 2l10 10-10 10L2 12z"/>
+  </svg>`
+};
+
 const handleSubmit = () => {
   error.value = "";
 
@@ -132,18 +166,23 @@ const handleAmountBlur = (event: Event) => {
         <label class="block text-sm font-medium text-gray-700 mb-2">
           Danh mục
         </label>
-        <select
-          v-model="transaction.category"
-          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3">
+          <button
             v-for="category in expenseCategories"
             :key="category"
-            :value="category"
+            type="button"
+            @click="transaction.category = category"
+            :class="[
+              'p-4 rounded-lg border flex flex-col items-center justify-center gap-2 transition-colors',
+              transaction.category === category
+                ? 'bg-blue-50 border-blue-500 text-blue-700'
+                : 'border-gray-200 hover:border-blue-200 hover:bg-blue-50'
+            ]"
           >
-            {{ category }}
-          </option>
-        </select>
+            <span v-html="categoryIcons[category]" class="w-8 h-8"></span>
+            <span class="text-sm">{{ category }}</span>
+          </button>
+        </div>
       </div>
 
       <!-- Vehicle -->
@@ -151,25 +190,21 @@ const handleAmountBlur = (event: Event) => {
         <label class="block text-sm font-medium text-gray-700 mb-2">
           Xe *
         </label>
-        <div class="space-y-2">
-          <div
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <button
             v-for="vehicle in vehicles"
             :key="vehicle.id"
-            class="flex items-center"
+            type="button"
+            @click="transaction.vehicleId = vehicle.id"
+            :class="[
+              'p-4 rounded-lg border transition-colors',
+              transaction.vehicleId === vehicle.id
+                ? 'bg-blue-50 border-blue-500 text-blue-700'
+                : 'border-gray-200 hover:border-blue-200 hover:bg-blue-50'
+            ]"
           >
-            <input
-              type="radio"
-              :id="vehicle.id"
-              :value="vehicle.id"
-              v-model="transaction.vehicleId"
-              required
-              class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-            />
-            <label :for="vehicle.id" class="ml-2 text-sm text-gray-700">
-              {{ vehicle.licensePlate }} - {{ vehicle.brand }}
-              {{ vehicle.model }}
-            </label>
-          </div>
+            <span class="text-sm">{{ vehicle.licensePlate }}</span>
+          </button>
         </div>
       </div>
 

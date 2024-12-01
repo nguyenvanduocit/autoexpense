@@ -76,5 +76,13 @@ const toggleDropdown = (vehicleId: string) => {
         </div>
       </div>
     </div>
+    <router-link
+      to="/vehicles/add"
+      class="bg-white rounded-lg p-3 cursor-pointer transition-all border-2 border-dashed border-gray-300 group"
+    >
+      <div class="flex items-center justify-center h-full">
+        <span class="font-medium text-sm text-gray-500 group-hover:text-gray-700">+ Thêm xe</span>
+      </div>
+    </router-link>
   </div>
 </template>

@@ -18,7 +18,6 @@ const navigateTo = (path: string) => {
 };
 
 const navItems = [
-  { path: '/vehicles/add', text: '+ Thêm xe', variant: 'secondary' },
   { path: '/transactions/add', text: '+ Thêm giao dịch', variant: 'primary' },
   { path: '/settings', text: 'Cài đặt', variant: 'secondary', icon: 'settings' }
 ];
