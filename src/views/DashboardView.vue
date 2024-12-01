@@ -12,11 +12,11 @@ import { auth } from "../config/firebase";
 import StatsCards from "../components/dashboard/StatsCards.vue";
 import VehicleFilter from "../components/dashboard/VehicleFilter.vue";
 import RecentTransactions from "../components/dashboard/RecentTransactions.vue";
-import UpcomingReminders from "../components/dashboard/UpcomingReminders.vue";
 import DeleteVehicleDialog from "../components/dashboard/DeleteVehicleDialog.vue";
 import NoVehiclesMessage from "../components/dashboard/NoVehiclesMessage.vue";
 import NoTransactionsMessage from "../components/dashboard/NoTransactionsMessage.vue";
 import ExpenseTimelineChart from "../components/ExpenseTimelineChart.vue";
+import ExpenseHeatmapChart from "../components/ExpenseHeatmapChart.vue";
 
 const router = useRouter();
 const db = useFirestore()
@@ -35,6 +35,9 @@ const filteredTransactions = computed(() => {
   if (!selectedVehicle.value) return transactions.value
   return transactions.value?.filter(t => t.vehicleId === selectedVehicle.value)
 })
+
+const currentPage = ref(1);
+const itemsPerPage = 5;
 
 const stats = computed<DashboardStats>(() => {
   if (!filteredTransactions.value) return {
@@ -58,8 +61,7 @@ const stats = computed<DashboardStats>(() => {
       .reduce((sum: number, t: Transaction) => sum + t.amount, 0),
     expensesByCategory: {} as Record<ExpenseCategory, number>,
     recentTransactions: filteredTransactions.value
-      .sort((a: Transaction, b: Transaction) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 5),
+      .sort((a: Transaction, b: Transaction) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     upcomingReminders: reminders.value
       ?.filter((r: Reminder) => !r.isCompleted && new Date(r.dueDate) > new Date())
       .sort((a: Reminder, b: Reminder) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
@@ -102,6 +104,10 @@ const confirmDelete = async () => {
 const navigateToTransaction = (id: string) => {
   router.push(`/transactions/${id}`);
 };
+
+const handlePageUpdate = (page: number) => {
+  currentPage.value = page;
+};
 </script>
 
 <template>
@@ -141,10 +147,18 @@ const navigateToTransaction = (id: string) => {
           </div>
         </div>
 
+        <!-- Expense Heatmap -->
+        <div class="bg-white rounded-lg shadow w-full mb-8">
+          <ExpenseHeatmapChart :transactions="filteredTransactions" />
+        </div>
+
         <!-- Recent Transactions -->
         <RecentTransactions
           :transactions="stats.recentTransactions"
+          :current-page="currentPage"
+          :items-per-page="itemsPerPage"
           @click="navigateToTransaction"
+          @update-page="handlePageUpdate"
         />
       </template>
     </template>
