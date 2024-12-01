@@ -35,7 +35,7 @@ const props = defineProps<{
   }>
 }>()
 
-const timeRange = ref<TimeRange>('month')
+const timeRange = ref<TimeRange>('quarter')
 
 const filteredTransactions = computed(() => {
   const now = new Date()
