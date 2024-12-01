@@ -27,30 +27,30 @@ const toggleDropdown = (vehicleId: string) => {
 </script>
 
 <template>
-  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
     <div
       @click="emit('update:selectedVehicleId', null)"
-      class="bg-white rounded-lg shadow p-4 cursor-pointer transition-all hover:shadow-md"
+      class="bg-white rounded-lg shadow p-3 cursor-pointer transition-all hover:shadow-md"
       :class="{ 'ring-2 ring-blue-500': selectedVehicleId === null }"
     >
-      <h3 class="font-medium text-center">Tất cả xe</h3>
+      <h3 class="font-medium text-center text-sm">Tất cả xe</h3>
     </div>
     <div
       v-for="vehicle in vehicles"
       :key="vehicle.id"
-      class="bg-white rounded-lg shadow p-4 cursor-pointer transition-all hover:shadow-md relative"
+      class="bg-white rounded-lg shadow p-3 cursor-pointer transition-all hover:shadow-md relative"
       :class="{ 'ring-2 ring-blue-500': selectedVehicleId === vehicle.id }"
     >
       <div class="flex justify-between items-center">
         <div @click="emit('update:selectedVehicleId', vehicle.id)" class="flex-1">
-          <h3 class="font-medium text-center">{{ vehicle.brand }} {{ vehicle.model }}</h3>
+          <h3 class="font-medium text-center text-sm">{{ vehicle.brand }} {{ vehicle.model }}</h3>
         </div>
         <div class="relative">
           <button
             @click.stop="toggleDropdown(vehicle.id)"
-            class="p-1 hover:bg-gray-100 rounded-full"
+            class="p-0.5 hover:bg-gray-100 rounded-full"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
             </svg>
           </button>
