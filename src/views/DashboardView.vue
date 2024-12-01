@@ -3,6 +3,7 @@ import { ref, computed } from "vue";
 import { useCollection } from 'vuefire'
 import { collection, deleteDoc, doc, query, where, getDocs } from 'firebase/firestore'
 import { useFirestore } from 'vuefire'
+import { useStorage } from '@vueuse/core'
 import type { Transaction, DashboardStats, ExpenseCategory, Vehicle, Reminder } from "../types";
 import { useRouter } from "vue-router";
 import ExpenseAnalysisChart from "../components/ExpenseAnalysisChart.vue";
@@ -22,7 +23,7 @@ const router = useRouter();
 const db = useFirestore()
 const userId = auth.currentUser?.uid
 
-const selectedVehicle = ref<string | null>(null)
+const selectedVehicle = useStorage<string | null>('selected-vehicle', null)
 
 // Use VueFire's useCollection to get realtime data
 const { data: vehicles, pending: vehiclesPending } = useCollection<Vehicle>(collection(db, `users/${userId}/vehicles`))
