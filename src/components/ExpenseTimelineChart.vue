@@ -13,6 +13,7 @@ import {
 } from 'echarts/components'
 import VChart from 'vue-echarts'
 import type { ExpenseCategory } from '../types'
+import TimeRangeFilter from './TimeRangeFilter.vue'
 
 use([
   CanvasRenderer,
@@ -47,8 +48,12 @@ const filteredTransactions = computed(() => {
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
       return transactions.filter(t => new Date(t.date) >= weekAgo)
     case 'month':
-      const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate())
-      return transactions.filter(t => new Date(t.date) >= monthAgo)
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      return transactions.filter(t => {
+        const date = new Date(t.date)
+        return date >= startOfMonth && date <= endOfMonth
+      })
     default:
       return transactions
   }
@@ -58,22 +63,30 @@ const chartData = computed(() => {
   const categories = [...new Set(props.transactions.map(t => t.category))]
   const dateMap = new Map<string, Record<ExpenseCategory, number>>()
 
-  filteredTransactions.value.forEach(transaction => {
-    const date = new Date(transaction.date).toLocaleDateString()
-    const existing = dateMap.get(date) || Object.fromEntries(
-      categories.map(c => [c, 0])
-    ) as Record<ExpenseCategory, number>
-    
-    existing[transaction.category] += transaction.amount
-    dateMap.set(date, existing)
-  })
+  filteredTransactions.value
+    .filter(transaction => transaction && transaction.date && transaction.category)
+    .forEach(transaction => {
+      const date = new Date(transaction.date).toLocaleDateString()
+      const existing = dateMap.get(date) || Object.fromEntries(
+        categories.map(c => [c, 0])
+      ) as Record<ExpenseCategory, number>
+      
+      existing[transaction.category] += transaction.amount || 0
+      dateMap.set(date, existing)
+    })
 
   const dates = Array.from(dateMap.keys())
   
   return categories.map(category => ({
     name: category,
     type: 'line',
-    data: dates.map(date => dateMap.get(date)![category])
+    connectNulls: true,
+    data: dates.map(date => {
+      const categoryData = dateMap.get(date)
+      if (!categoryData) return null
+      const value = categoryData[category]
+      return value > 0 ? value : null
+    })
   }))
 })
 
@@ -81,9 +94,13 @@ const chartOption = computed(() => ({
   tooltip: {
     trigger: 'axis',
     formatter: (params: any) => {
+      if (!params || !params.length) return ''
+      
       let result = `${params[0].axisValue}<br/>`
       params.forEach((param: any) => {
-        result += `${param.seriesName}: ${param.value.toLocaleString()} VND<br/>`
+        if (param && param.value !== null) {
+          result += `${param.seriesName}: ${param.value?.toLocaleString() || 0} VND<br/>`
+        }
       })
       return result
     }
@@ -102,9 +119,10 @@ const chartOption = computed(() => ({
   },
   xAxis: {
     type: 'category',
-    data: Array.from(new Set(filteredTransactions.value.map(t => 
-      new Date(t.date).toLocaleDateString()
-    )))
+    data: Array.from(new Set(filteredTransactions.value
+      .filter(t => t && t.date)
+      .map(t => new Date(t.date).toLocaleDateString())
+    ))
   },
   yAxis: {
     type: 'value'
@@ -116,26 +134,7 @@ const chartOption = computed(() => ({
 <template>
   <div class="expense-timeline">
     <div class="mb-4">
-      <div class="time-range-buttons">
-        <button 
-          @click="timeRange = 'week'"
-          :class="['time-btn', timeRange === 'week' ? 'active' : '']"
-        >
-          Tuần này
-        </button>
-        <button 
-          @click="timeRange = 'month'"
-          :class="['time-btn', timeRange === 'month' ? 'active' : '']"
-        >
-          Tháng này
-        </button>
-        <button 
-          @click="timeRange = 'all'"
-          :class="['time-btn', timeRange === 'all' ? 'active' : '']"
-        >
-          Tất cả
-        </button>
-      </div>
+      <TimeRangeFilter v-model="timeRange" />
     </div>
     
     <v-chart class="chart" :option="chartOption" />
@@ -151,29 +150,5 @@ const chartOption = computed(() => ({
 .chart {
   height: 400px;
   width: 100%;
-}
-
-.time-range-buttons {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.time-btn {
-  padding: 0.5rem 1rem;
-  border: 1px solid #e2e8f0;
-  background-color: white;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.time-btn:hover {
-  background-color: #f8fafc;
-}
-
-.time-btn.active {
-  background-color: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
 }
 </style> 
