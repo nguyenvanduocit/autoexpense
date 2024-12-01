@@ -79,7 +79,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="p-6">
+  <div class="p-6 max-w-5xl mx-auto">
     <!-- No vehicles message -->
     <div v-if="!hasVehicles" class="text-center py-12">
       <div class="mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
@@ -124,43 +124,60 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- Expense Analysis Chart -->
-      <div class="bg-white rounded-lg shadow mb-8">
-        <div class="p-6">
-          <ExpenseAnalysisChart :transactions="transactions" />
-        </div>
+      <!-- No transactions message -->
+      <div v-if="!transactions.length" class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <h2 class="text-xl font-bold mb-4">Chưa có giao dịch nào</h2>
+        <p class="text-gray-600 mb-6">
+          Hãy thêm giao dịch đầu tiên để bắt đầu theo dõi chi phí của bạn.
+        </p>
+        <button
+          @click="router.push('/transactions/add')"
+          class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          + Thêm giao dịch mới
+        </button>
       </div>
 
-      <!-- Recent Transactions -->
-      <div class="bg-white rounded-lg shadow mb-8">
-        <div class="p-6">
-          <h2 class="text-lg font-semibold mb-4">Giao dịch gần đây</h2>
-          <div class="space-y-4">
-            <div
-              v-for="transaction in stats.recentTransactions"
-              :key="transaction.id"
-              @click="navigateToTransaction(transaction.id)"
-              class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg cursor-pointer"
-            >
-              <div>
-                <p class="font-medium">
-                  {{ transaction.description || transaction.category }}
-                </p>
-                <p class="text-sm text-gray-500">
-                  {{ formatDate(transaction.date) }}
-                </p>
-              </div>
+      <!-- Chart and Transactions list - only show if there are transactions -->
+      <template v-else>
+        <!-- Expense Analysis Chart -->
+        <div class="bg-white rounded-lg shadow mb-8">
+          <div class="p-6">
+            <ExpenseAnalysisChart :transactions="transactions" />
+          </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="bg-white rounded-lg shadow mb-8">
+          <div class="p-6">
+            <h2 class="text-lg font-semibold mb-4">Giao dịch gần đây</h2>
+            <div class="space-y-4">
               <div
-                :class="{
-                  'text-red-600': true,
-                }"
+                v-for="transaction in stats.recentTransactions"
+                :key="transaction.id"
+                @click="navigateToTransaction(transaction.id)"
+                class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg cursor-pointer"
               >
-                {{ formatCurrency(transaction.amount) }}
+                <div>
+                  <p class="font-medium">
+                    {{ transaction.description || transaction.category }}
+                  </p>
+                  <p class="text-sm text-gray-500">
+                    {{ formatDate(transaction.date) }}
+                  </p>
+                </div>
+                <div
+                  :class="{
+                    'text-red-600': true,
+                  }"
+                >
+                  {{ formatCurrency(transaction.amount) }}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </template>
 
       <!-- Upcoming Reminders -->
       <div class="bg-white rounded-lg shadow">

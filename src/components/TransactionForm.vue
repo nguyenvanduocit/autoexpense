@@ -25,10 +25,15 @@ const transaction = ref<Transaction>({
 
 const vehicles = ref<Vehicle[]>([]);
 const error = ref("");
+const isLoading = ref(true);
 const expenseCategories = Object.values(ExpenseCategory);
 
 onMounted(async () => {
-  vehicles.value = await StorageService.getAllVehicles();
+  try {
+    vehicles.value = await StorageService.getAllVehicles();
+  } finally {
+    isLoading.value = false;
+  }
 });
 
 const handleSubmit = () => {
@@ -52,14 +57,19 @@ watch(
   }
 );
 
-const showAddVehiclePrompt = computed(() => vehicles.value.length === 0);
+const showAddVehiclePrompt = computed(() => !isLoading.value && vehicles.value.length === 0);
 </script>
 
 <template>
   <div>
+    <!-- Loading State -->
+    <div v-if="isLoading" class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+      <p class="text-gray-700">Đang tải dữ liệu...</p>
+    </div>
+
     <!-- Add Vehicle Prompt -->
     <div
-      v-if="showAddVehiclePrompt"
+      v-else-if="showAddVehiclePrompt"
       class="mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200"
     >
       <p class="text-yellow-700 mb-3">
