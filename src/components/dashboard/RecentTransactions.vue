@@ -30,7 +30,7 @@ const formatDate = (dateString: string) => {
           v-for="transaction in transactions"
           :key="transaction.id"
           @click="emit('click', transaction.id)"
-          class="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg cursor-pointer"
+          class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg cursor-pointer"
         >
           <div>
             <p class="font-medium">

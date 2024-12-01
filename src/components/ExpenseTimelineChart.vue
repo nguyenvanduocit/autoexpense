@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
-import { PieChart } from 'echarts/charts'
+import { LineChart } from 'echarts/charts'
 import {
   TitleComponent,
   TooltipComponent,
@@ -16,7 +16,7 @@ import type { ExpenseCategory } from '../types'
 
 use([
   CanvasRenderer,
-  PieChart,
+  LineChart,
   TitleComponent,
   TooltipComponent,
   LegendComponent,
@@ -30,7 +30,6 @@ const props = defineProps<{
     id: string
     amount: number
     date: string
-    description: string
     category: ExpenseCategory
   }>
 }>()
@@ -39,7 +38,9 @@ const timeRange = ref('month') // 'week', 'month', 'all'
 
 const filteredTransactions = computed(() => {
   const now = new Date()
-  const transactions = props.transactions
+  const transactions = [...props.transactions].sort((a, b) => 
+    new Date(a.date).getTime() - new Date(b.date).getTime()
+  )
 
   switch (timeRange.value) {
     case 'week':
@@ -54,50 +55,66 @@ const filteredTransactions = computed(() => {
 })
 
 const chartData = computed(() => {
-  const categoryTotals = new Map<string, number>()
-  
+  const categories = [...new Set(props.transactions.map(t => t.category))]
+  const dateMap = new Map<string, Record<ExpenseCategory, number>>()
+
   filteredTransactions.value.forEach(transaction => {
-    const currentTotal = categoryTotals.get(transaction.category) || 0
-    categoryTotals.set(transaction.category, currentTotal + transaction.amount)
+    const date = new Date(transaction.date).toLocaleDateString()
+    const existing = dateMap.get(date) || Object.fromEntries(
+      categories.map(c => [c, 0])
+    ) as Record<ExpenseCategory, number>
+    
+    existing[transaction.category] += transaction.amount
+    dateMap.set(date, existing)
   })
 
-  return Array.from(categoryTotals.entries()).map(([category, total]) => ({
+  const dates = Array.from(dateMap.keys())
+  
+  return categories.map(category => ({
     name: category,
-    value: total
+    type: 'line',
+    data: dates.map(date => dateMap.get(date)![category])
   }))
 })
 
 const chartOption = computed(() => ({
   tooltip: {
-    trigger: 'item',
-    formatter: '{b}: {c} VND ({d}%)'
+    trigger: 'axis',
+    formatter: (params: any) => {
+      let result = `${params[0].axisValue}<br/>`
+      params.forEach((param: any) => {
+        result += `${param.seriesName}: ${param.value.toLocaleString()} VND<br/>`
+      })
+      return result
+    }
   },
   legend: {
+    data: [...new Set(props.transactions.map(t => t.category))],
     orient: 'horizontal',
-    left: 'center',
-    top: 'top'
+    top: 0
   },
-  series: [
-    {
-      name: 'Chi phí theo danh mục',
-      type: 'pie',
-      radius: '50%',
-      center: ['60%', '50%'],
-      data: chartData.value,
-      emphasis: {
-        itemStyle: {
-          shadowBlur: 10,
-          shadowOffsetX: 0,
-          shadowColor: 'rgba(0, 0, 0, 0.5)'
-        }
-      }
-    }
-  ]
+  grid: {
+    left: '3%',
+    right: '4%',
+    bottom: '3%',
+    top: '15%',
+    containLabel: true
+  },
+  xAxis: {
+    type: 'category',
+    data: Array.from(new Set(filteredTransactions.value.map(t => 
+      new Date(t.date).toLocaleDateString()
+    )))
+  },
+  yAxis: {
+    type: 'value'
+  },
+  series: chartData.value
 }))
 </script>
 
 <template>
-  <div class="expense-analysis">
+  <div class="expense-timeline">
     <div class="mb-4">
       <div class="time-range-buttons">
         <button 
@@ -126,7 +143,7 @@ const chartOption = computed(() => ({
 </template>
 
 <style scoped>
-.expense-analysis {
+.expense-timeline {
   width: 100%;
   padding: 1rem;
 }

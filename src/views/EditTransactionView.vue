@@ -14,6 +14,7 @@ const isSubmitting = ref(false);
 const transaction = ref<Transaction | undefined>();
 const db = useFirestore();
 const userId = auth.currentUser?.uid;
+const showSuccessDialog = ref(false);
 
 onMounted(async () => {
   if (!userId) {
@@ -43,12 +44,20 @@ const handleSubmit = async (updatedTransaction: Transaction) => {
       return;
     }
 
+    const transactionId = route.params.id as string;
     const { id, ...transactionData } = updatedTransaction;
-    const transactionRef = doc(db, `users/${userId}/transactions/${id}`);
+    
+    const transactionRef = doc(db, `users/${userId}/transactions/${transactionId}`);
     await updateDoc(transactionRef, transactionData);
-    router.push("/");
+    
+    showSuccessDialog.value = true;
+    setTimeout(() => {
+      showSuccessDialog.value = false;
+      router.push("/");
+    }, 1500);
   } catch (e) {
-    error.value = "Có lỗi xảy ra khi cập nhật giao dịch";
+    console.error("Lỗi khi cập nhật:", e);
+    error.value = "Có lỗi xảy ra khi cập nhật giao dịch. Vui lòng thử lại.";
   } finally {
     isSubmitting.value = false;
   }
@@ -70,13 +79,33 @@ const handleSubmit = async (updatedTransaction: Transaction) => {
       :is-submitting="isSubmitting"
       @submit="handleSubmit"
     >
-      <template #submit-text>
-        {{ isSubmitting ? "Đang lưu..." : "Cập nhật giao dịch" }}
-      </template>
     </TransactionForm>
-
-    <div v-else-if="error" class="text-center text-red-600 mt-8">
+    <div v-if="error" class="text-center text-red-600 mt-8">
       {{ error }}
+    </div>
+
+    <div
+      v-if="showSuccessDialog"
+      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+    >
+      <div class="bg-white rounded-lg p-6 shadow-xl">
+        <div class="flex items-center text-green-600">
+          <svg
+            class="w-6 h-6 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+          <span class="text-lg font-medium">Cập nhật giao dịch thành công!</span>
+        </div>
+      </div>
     </div>
   </div>
 </template>

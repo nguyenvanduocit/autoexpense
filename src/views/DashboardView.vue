@@ -16,6 +16,7 @@ import UpcomingReminders from "../components/dashboard/UpcomingReminders.vue";
 import DeleteVehicleDialog from "../components/dashboard/DeleteVehicleDialog.vue";
 import NoVehiclesMessage from "../components/dashboard/NoVehiclesMessage.vue";
 import NoTransactionsMessage from "../components/dashboard/NoTransactionsMessage.vue";
+import ExpenseTimelineChart from "../components/ExpenseTimelineChart.vue";
 
 const router = useRouter();
 const db = useFirestore()
@@ -104,13 +105,13 @@ const navigateToTransaction = (id: string) => {
 </script>
 
 <template>
-  <div class="p-6 max-w-5xl mx-auto">
+  <div class="p-4 sm:p-6 max-w-5xl mx-auto">
     <!-- No vehicles message -->
     <NoVehiclesMessage v-if="!hasVehicles" />
 
     <!-- Dashboard content -->
     <template v-else>
-      <h1 class="text-2xl font-bold mb-6">Dashboard</h1>
+      <h1 class="text-2xl font-bold mb-4 sm:mb-6">Dashboard</h1>
 
       <!-- Stats Cards -->
       <StatsCards :stats="stats" />
@@ -127,10 +128,16 @@ const navigateToTransaction = (id: string) => {
 
       <!-- Chart and Transactions list - only show if there are transactions -->
       <template v-else>
-        <!-- Expense Analysis Chart -->
-        <div class="bg-white rounded-lg shadow mb-8">
-          <div class="p-6">
-            <ExpenseAnalysisChart :transactions="transactions" />
+        <!-- Charts Section -->
+        <div class="flex flex-col lg:flex-row gap-4 sm:gap-8 mb-8">
+          <!-- Expense Timeline Chart -->
+          <div class="bg-white rounded-lg shadow w-full lg:w-[60%]">
+            <ExpenseTimelineChart :transactions="filteredTransactions" />
+          </div>
+
+          <!-- Expense Analysis Chart -->
+          <div class="bg-white rounded-lg shadow w-full lg:w-[40%]">
+            <ExpenseAnalysisChart :transactions="filteredTransactions" />
           </div>
         </div>
 
@@ -140,9 +147,6 @@ const navigateToTransaction = (id: string) => {
           @click="navigateToTransaction"
         />
       </template>
-
-      <!-- Upcoming Reminders -->
-      <UpcomingReminders :reminders="stats.upcomingReminders" />
     </template>
   </div>
 

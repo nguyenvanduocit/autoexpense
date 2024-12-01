@@ -38,12 +38,29 @@ const expenseCategories = Object.values(ExpenseCategory);
 const handleSubmit = () => {
   error.value = "";
 
-  if (!transaction.value.amount || !transaction.value.vehicleId) {
-    error.value = "Vui lòng điền đầy đủ thông tin bắt buộc";
+  // Validate dữ liệu
+  if (!transaction.value.amount) {
+    error.value = "Vui lòng nhập số tiền";
     return;
   }
 
-  emit("submit", transaction.value);
+  if (!transaction.value.vehicleId) {
+    error.value = "Vui lòng chọn xe";
+    return;
+  }
+
+  if (!transaction.value.date) {
+    error.value = "Vui lòng chọn ngày";
+    return;
+  }
+
+  // Đảm bảo id được giữ nguyên khi cập nhật
+  const submittingTransaction = {
+    ...transaction.value,
+    id: props.initialTransaction?.id || transaction.value.id,
+  };
+
+  emit("submit", submittingTransaction);
 };
 
 // Sync with parent when initialTransaction changes
@@ -72,11 +89,13 @@ const convertAmount = (value: string): number => {
 };
 
 const handleAmountBlur = (event: Event) => {
-  const target = event.target as HTMLInputElement
+  const target = event.target as HTMLInputElement;
   if (target) {
-    transaction.value.amount = convertAmount(target.value)
+    const convertedAmount = convertAmount(target.value);
+    transaction.value.amount = convertedAmount;
+    target.value = convertedAmount.toString(); // Cập nhật giá trị hiển thị
   }
-}
+};
 </script>
 
 <template>
