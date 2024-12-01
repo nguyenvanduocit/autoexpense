@@ -20,6 +20,7 @@ const userId = auth.currentUser?.uid
 
 const amount = ref('')
 const category = ref<ExpenseCategory>(ExpenseCategory.Fuel)
+const date = ref(new Date().toISOString().split('T')[0])
 
 const categories: ExpenseCategory[] = [
   ExpenseCategory.Fuel,
@@ -44,7 +45,7 @@ const handleSubmit = async () => {
     await addDoc(collection(db, `users/${userId}/transactions`), {
       amount: Number(amount.value),
       category: category.value,
-      date: new Date().toISOString(),
+      date: date.value,
       vehicleId: props.vehicleId,
       notes: ''
     })
@@ -80,6 +81,14 @@ const handleSubmit = async () => {
             {{ cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase() }}
           </option>
         </select>
+      </div>
+      <div class="flex-1 min-w-[120px]">
+        <input
+          v-model="date"
+          type="date"
+          class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+          required
+        >
       </div>
       <div class="flex gap-2">
         <button
