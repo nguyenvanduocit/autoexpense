@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { StorageService } from "../services/storage.service";
+import { useFirestore } from 'vuefire';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { auth } from "../config/firebase";
 import TransactionForm from "../components/TransactionForm.vue";
 import type { Transaction } from "../types";
 
@@ -10,19 +12,25 @@ const route = useRoute();
 const error = ref("");
 const isSubmitting = ref(false);
 const transaction = ref<Transaction | undefined>();
+const db = useFirestore();
+const userId = auth.currentUser?.uid;
 
 onMounted(async () => {
-  const transactionId = route.params.id as string;
-  const existingTransaction = await StorageService.getTransactionById(
-    transactionId
-  );
+  if (!userId) {
+    error.value = "Vui lòng đăng nhập";
+    return;
+  }
 
-  if (!existingTransaction) {
+  const transactionId = route.params.id as string;
+  const transactionRef = doc(db, `users/${userId}/transactions/${transactionId}`);
+  const transactionSnap = await getDoc(transactionRef);
+
+  if (!transactionSnap.exists()) {
     error.value = "Không tìm thấy giao dịch";
     return;
   }
 
-  transaction.value = await existingTransaction;
+  transaction.value = { id: transactionSnap.id, ...transactionSnap.data() } as Transaction;
 });
 
 const handleSubmit = async (updatedTransaction: Transaction) => {
@@ -30,7 +38,14 @@ const handleSubmit = async (updatedTransaction: Transaction) => {
     isSubmitting.value = true;
     error.value = "";
 
-    StorageService.updateTransaction(updatedTransaction);
+    if (!userId) {
+      error.value = "Vui lòng đăng nhập";
+      return;
+    }
+
+    const { id, ...transactionData } = updatedTransaction;
+    const transactionRef = doc(db, `users/${userId}/transactions/${id}`);
+    await updateDoc(transactionRef, transactionData);
     router.push("/");
   } catch (e) {
     error.value = "Có lỗi xảy ra khi cập nhật giao dịch";

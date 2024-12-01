@@ -1,62 +1,61 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import { StorageService } from "../services/storage.service";
-import type { Transaction, DashboardStats, ExpenseCategory } from "../types";
+import { ref, computed } from "vue";
+import { useCollection } from 'vuefire'
+import { collection, deleteDoc, doc } from 'firebase/firestore'
+import { useFirestore } from 'vuefire'
+import type { Transaction, DashboardStats, ExpenseCategory, Vehicle, Reminder } from "../types";
 import { useRouter } from "vue-router";
 import ExpenseAnalysisChart from "../components/ExpenseAnalysisChart.vue";
+import { auth } from "../config/firebase";
 
 const router = useRouter();
-const stats = ref<DashboardStats>({
-  totalExpenses: 0,
-  monthlyExpenses: 0,
-  expensesByCategory: {} as Record<ExpenseCategory, number>,
-  recentTransactions: [],
-  upcomingReminders: [],
-});
+const db = useFirestore()
+const userId = auth.currentUser?.uid
 
-const transactions = ref<Transaction[]>([]);
-const hasVehicles = ref(false);
+const selectedVehicle = ref<string | null>(null)
 
-const calculateStats = async () => {
-  const vehicles = await StorageService.getAllVehicles();
-  hasVehicles.value = vehicles.length > 0;
+// Use VueFire's useCollection to get realtime data
+const vehicles = useCollection<Vehicle>(collection(db, `users/${userId}/vehicles`))
+const transactions = useCollection<Transaction>(collection(db, `users/${userId}/transactions`))
+const reminders = useCollection<Reminder>(collection(db, `users/${userId}/reminders`))
 
-  if (!hasVehicles.value) return;
+const hasVehicles = computed(() => vehicles.value?.length > 0)
 
-  transactions.value = await StorageService.getAllTransactions();
-  const reminders = await StorageService.getAllReminders();
+const filteredTransactions = computed(() => {
+  if (!selectedVehicle.value) return transactions.value
+  return transactions.value?.filter(t => t.vehicleId === selectedVehicle.value)
+})
 
-  // Calculate total expenses
-  stats.value.totalExpenses = transactions.value.reduce(
-    (sum, t) => sum + t.amount,
-    0
-  );
+const stats = computed<DashboardStats>(() => {
+  if (!filteredTransactions.value) return {
+    totalExpenses: 0,
+    monthlyExpenses: 0,
+    expensesByCategory: {} as Record<ExpenseCategory, number>,
+    recentTransactions: [],
+    upcomingReminders: [],
+  }
 
-  // Calculate monthly expenses
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-  stats.value.monthlyExpenses = transactions.value
-    .filter((t) => {
-      const date = new Date(t.date);
-      return (
-        date.getMonth() === currentMonth && date.getFullYear() === currentYear
-      );
-    })
-    .reduce((sum, t) => sum + t.amount, 0);
+  const currentMonth = new Date().getMonth()
+  const currentYear = new Date().getFullYear()
 
-  // Get recent transactions
-  stats.value.recentTransactions = transactions.value
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5);
-
-  // Get upcoming reminders
-  stats.value.upcomingReminders = reminders
-    .filter((r) => !r.isCompleted && new Date(r.dueDate) > new Date())
-    .sort(
-      (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
-    )
-    .slice(0, 3);
-};
+  return {
+    totalExpenses: filteredTransactions.value.reduce((sum: number, t: Transaction) => sum + t.amount, 0),
+    monthlyExpenses: filteredTransactions.value
+      .filter((t: Transaction) => {
+        const date = new Date(t.date)
+        return date.getMonth() === currentMonth && date.getFullYear() === currentYear
+      })
+      .reduce((sum: number, t: Transaction) => sum + t.amount, 0),
+    expensesByCategory: {} as Record<ExpenseCategory, number>,
+    recentTransactions: filteredTransactions.value
+      .sort((a: Transaction, b: Transaction) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5),
+    upcomingReminders: reminders.value
+      ?.filter((r: Reminder) => !r.isCompleted && new Date(r.dueDate) > new Date())
+      .sort((a: Reminder, b: Reminder) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+      .slice(0, 3) || [],
+  }
+})
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("vi-VN", {
@@ -73,9 +72,41 @@ const navigateToTransaction = (id: string) => {
   router.push(`/transactions/${id}`);
 };
 
-onMounted(async () => {
-  await calculateStats();
-});
+const showDeleteDialog = ref(false)
+const vehicleToDelete = ref<Vehicle | null>(null)
+
+const handleDeleteVehicle = async (vehicle: Vehicle) => {
+  vehicleToDelete.value = vehicle
+  showDeleteDialog.value = true
+}
+
+const confirmDelete = async () => {
+  if (!vehicleToDelete.value) return
+  
+  try {
+    await deleteDoc(doc(db, `users/${userId}/vehicles/${vehicleToDelete.value.id}`))
+    showDeleteDialog.value = false
+    vehicleToDelete.value = null
+  } catch (error) {
+    console.error('Error deleting vehicle:', error)
+  }
+}
+
+// Thêm ref để quản lý dropdown
+const openDropdownId = ref<string | null>(null)
+
+const toggleDropdown = (vehicleId: string) => {
+  if (openDropdownId.value === vehicleId) {
+    openDropdownId.value = null
+  } else {
+    openDropdownId.value = vehicleId
+  }
+}
+
+// Thêm hàm để đóng dropdown khi click ra ngoài
+const closeDropdown = () => {
+  openDropdownId.value = null
+}
 </script>
 
 <template>
@@ -121,6 +152,58 @@ onMounted(async () => {
           <p class="text-2xl font-bold text-gray-900">
             {{ stats.recentTransactions.length }}
           </p>
+        </div>
+      </div>
+
+      <!-- Vehicle Filter Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+        <div
+          @click="selectedVehicle = null"
+          class="bg-white rounded-lg shadow p-4 cursor-pointer transition-all hover:shadow-md"
+          :class="{ 'ring-2 ring-blue-500': selectedVehicle === null }"
+        >
+          <h3 class="font-medium text-center">Tất cả xe</h3>
+        </div>
+        <div
+          v-for="vehicle in vehicles"
+          :key="vehicle.id"
+          class="bg-white rounded-lg shadow p-4 cursor-pointer transition-all hover:shadow-md relative"
+          :class="{ 'ring-2 ring-blue-500': selectedVehicle === vehicle.id }"
+        >
+          <div class="flex justify-between items-center">
+            <div @click="selectedVehicle = vehicle.id" class="flex-1">
+              <h3 class="font-medium text-center">{{ vehicle.brand }} {{ vehicle.model }}</h3>
+            </div>
+            <div class="relative">
+              <button
+                @click.stop="toggleDropdown(vehicle.id)"
+                class="p-1 hover:bg-gray-100 rounded-full"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                </svg>
+              </button>
+              <div
+                v-show="openDropdownId === vehicle.id"
+                class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10"
+              >
+                <div class="py-1">
+                  <a
+                    @click.stop="router.push(`/vehicles/${vehicle.id}/edit`)"
+                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                  >
+                    Chỉnh sửa
+                  </a>
+                  <a
+                    @click.stop="handleDeleteVehicle(vehicle)"
+                    class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100 cursor-pointer"
+                  >
+                    Xóa
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -203,5 +286,30 @@ onMounted(async () => {
         </div>
       </div>
     </template>
+  </div>
+
+  <!-- Delete Confirmation Dialog -->
+  <div v-if="showDeleteDialog" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-sm mx-auto">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">Xác nhận xóa xe</h3>
+      <p class="text-sm text-gray-500 mb-4">
+        Bạn có chắc chắn muốn xóa xe {{ vehicleToDelete?.brand }} {{ vehicleToDelete?.model }}? 
+        Hành động này không thể hoàn tác.
+      </p>
+      <div class="flex justify-end space-x-4">
+        <button
+          @click="showDeleteDialog = false"
+          class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md"
+        >
+          Hủy
+        </button>
+        <button
+          @click="confirmDelete"
+          class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md"
+        >
+          Xóa
+        </button>
+      </div>
+    </div>
   </div>
 </template>

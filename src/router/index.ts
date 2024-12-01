@@ -4,6 +4,7 @@ import AddTransactionView from "../views/AddTransactionView.vue";
 import TransactionDetailsView from "../views/TransactionDetailsView.vue";
 import AddVehicleView from "../views/AddVehicleView.vue";
 import EditTransactionView from "../views/EditTransactionView.vue";
+import EditVehicleView from "../views/EditVehicleView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -32,6 +33,12 @@ const router = createRouter({
       path: "/vehicles/add",
       name: "add-vehicle",
       component: AddVehicleView,
+    },
+    {
+      path: "/vehicles/:id/edit",
+      name: "edit-vehicle",
+      component: EditVehicleView,
+      meta: { requiresAuth: true },
     },
   ],
 });

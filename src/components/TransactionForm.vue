@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, computed } from "vue";
+import { ref, watch, computed } from "vue";
 import { ExpenseCategory, Transaction, Vehicle } from "../types";
-import { StorageService } from "../services/storage.service";
+import { useFirestore } from "vuefire";
+import { auth } from "../config/firebase";
+import { useCollection } from "vuefire";
+import { collection } from 'firebase/firestore';
 import { RouterLink } from "vue-router";
 
 const props = defineProps<{
@@ -23,18 +26,14 @@ const transaction = ref<Transaction>({
   vehicleId: props.initialTransaction?.vehicleId || "",
 });
 
-const vehicles = ref<Vehicle[]>([]);
+const db = useFirestore()
+const userId = auth.currentUser?.uid
+const vehicles = useCollection<Vehicle>(collection(db, `users/${userId}/vehicles`))
 const error = ref("");
-const isLoading = ref(true);
-const expenseCategories = Object.values(ExpenseCategory);
+const isLoading = computed(() => !vehicles.value)
+const showAddVehiclePrompt = computed(() => !isLoading.value && vehicles.value?.length === 0)
 
-onMounted(async () => {
-  try {
-    vehicles.value = await StorageService.getAllVehicles();
-  } finally {
-    isLoading.value = false;
-  }
-});
+const expenseCategories = Object.values(ExpenseCategory);
 
 const handleSubmit = () => {
   error.value = "";
@@ -57,7 +56,27 @@ watch(
   }
 );
 
-const showAddVehiclePrompt = computed(() => !isLoading.value && vehicles.value.length === 0);
+// Add new function to handle amount conversion
+const convertAmount = (value: string): number => {
+  const cleanValue = value.toString().toLowerCase().trim();
+  
+  if (cleanValue.endsWith('k')) {
+    return parseFloat(cleanValue.slice(0, -1)) * 1000;
+  }
+  
+  if (cleanValue.endsWith('m')) {
+    return parseFloat(cleanValue.slice(0, -1)) * 1000000;
+  }
+  
+  return parseFloat(cleanValue) || 0;
+};
+
+const handleAmountBlur = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target) {
+    transaction.value.amount = convertAmount(target.value)
+  }
+}
 </script>
 
 <template>
@@ -96,8 +115,9 @@ const showAddVehiclePrompt = computed(() => !isLoading.value && vehicles.value.l
         </label>
         <input
           v-model="transaction.amount"
-          type="number"
+          type="text"
           required
+          @blur="handleAmountBlur"
           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>

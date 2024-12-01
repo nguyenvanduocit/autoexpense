@@ -1,25 +1,34 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { StorageService } from "../services/storage.service";
+import { useFirestore } from 'vuefire';
+import { collection, addDoc } from 'firebase/firestore';
+import { auth } from "../config/firebase";
 import TransactionForm from "../components/TransactionForm.vue";
 import type { Transaction } from "../types";
 
 const router = useRouter();
 const error = ref("");
 const isSubmitting = ref(false);
+const db = useFirestore();
+const userId = auth.currentUser?.uid;
 
 const handleSubmit = async (transaction: Transaction) => {
   try {
     isSubmitting.value = true;
     error.value = "";
 
+    if (!userId) {
+      error.value = "Vui lòng đăng nhập";
+      return;
+    }
+
     const newTransaction = {
       ...transaction,
       createdAt: new Date().toISOString(),
     };
 
-    await StorageService.addTransaction(newTransaction);
+    await addDoc(collection(db, `users/${userId}/transactions`), newTransaction);
     router.push("/");
   } catch (e) {
     console.error(e);

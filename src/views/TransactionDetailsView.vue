@@ -1,13 +1,27 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { StorageService } from "../services/storage.service";
+import { useDocument } from 'vuefire'
+import { doc, deleteDoc } from 'firebase/firestore'
+import { useFirestore } from 'vuefire'
+import { auth } from "../config/firebase";
 import type { Transaction, Vehicle } from "../types";
 
 const route = useRoute();
 const router = useRouter();
-const transaction = ref<Transaction | null>(null);
-const vehicle = ref<Vehicle | null>(null);
+const db = useFirestore()
+const userId = auth.currentUser?.uid
+const id = route.params.id as string
+
+const transaction = useDocument<Transaction>(
+  doc(db, `users/${userId}/transactions/${id}`)
+)
+
+const vehicle = useDocument<Vehicle | null>(computed(() => 
+  transaction.value?.vehicleId 
+    ? doc(db, `users/${userId}/vehicles/${transaction.value.vehicleId}`)
+    : null
+))
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("vi-VN", {
@@ -20,29 +34,14 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString("vi-VN");
 };
 
-const loadTransaction = async () => {
-  const id = route.params.id as string;
-  transaction.value = (await StorageService.getTransactionById(id)) || null;
-
-  if (transaction.value) {
-    vehicle.value =
-      (await StorageService.getVehicleById(transaction.value.vehicleId)) ||
-      null;
-  }
-};
-
 const handleDelete = async () => {
   if (!transaction.value) return;
 
   if (confirm("Bạn có chắc chắn muốn xóa giao dịch này?")) {
-    await StorageService.deleteTransaction(transaction.value.id);
+    await deleteDoc(doc(db, `users/${userId}/transactions/${transaction.value.id}`));
     router.push("/");
   }
 };
-
-onMounted(() => {
-  loadTransaction();
-});
 </script>
 
 <template>
