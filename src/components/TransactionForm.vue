@@ -6,6 +6,7 @@ import { auth } from "../config/firebase";
 import { useCollection } from "vuefire";
 import { collection } from 'firebase/firestore';
 import { RouterLink } from "vue-router";
+import { convertAmount } from '../utils/currency'
 
 const props = defineProps<{
   initialTransaction?: Transaction;
@@ -73,27 +74,12 @@ watch(
   }
 );
 
-// Add new function to handle amount conversion
-const convertAmount = (value: string): number => {
-  const cleanValue = value.toString().toLowerCase().trim();
-  
-  if (cleanValue.endsWith('k')) {
-    return parseFloat(cleanValue.slice(0, -1)) * 1000;
-  }
-  
-  if (cleanValue.endsWith('m')) {
-    return parseFloat(cleanValue.slice(0, -1)) * 1000000;
-  }
-  
-  return parseFloat(cleanValue) || 0;
-};
-
 const handleAmountBlur = (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (target) {
     const convertedAmount = convertAmount(target.value);
     transaction.value.amount = convertedAmount;
-    target.value = convertedAmount.toString(); // Cập nhật giá trị hiển thị
+    target.value = convertedAmount.toString();
   }
 };
 </script>

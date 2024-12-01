@@ -15,6 +15,7 @@ import RecentTransactions from "../components/dashboard/RecentTransactions.vue";
 import DeleteVehicleDialog from "../components/dashboard/DeleteVehicleDialog.vue";
 import NoVehiclesMessage from "../components/dashboard/NoVehiclesMessage.vue";
 import NoTransactionsMessage from "../components/dashboard/NoTransactionsMessage.vue";
+import QuickTransactionForm from "../components/dashboard/QuickTransactionForm.vue";
 
 // Lazy load chart components
 const ExpenseTimelineChart = defineAsyncComponent(() => 
@@ -122,6 +123,10 @@ const navigateToTransaction = (id: string) => {
 const handlePageUpdate = (page: number) => {
   currentPage.value = page;
 };
+
+const handleTransactionAdded = () => {
+  // Data sẽ tự động cập nhật nhờ vào VueFire
+}
 </script>
 
 <template>
@@ -170,6 +175,13 @@ const handlePageUpdate = (page: number) => {
         <div class="bg-white rounded-lg shadow w-full mb-8">
           <ExpenseHeatmapChart :transactions="filteredTransactions" />
         </div>
+
+        <!-- Quick Transaction Form - only show when a vehicle is selected -->
+        <QuickTransactionForm
+          v-if="selectedVehicle"
+          :vehicle-id="selectedVehicle"
+          @added="handleTransactionAdded"
+        />
 
         <!-- Recent Transactions -->
         <RecentTransactions
