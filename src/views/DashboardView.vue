@@ -169,10 +169,6 @@ const navigateToTransaction = (id: string) => {
 const handlePageUpdate = (page: number) => {
   currentPage.value = page;
 };
-
-const handleTransactionAdded = () => {
-  // Data will automatically update thanks to VueFire
-}
 </script>
 
 <template>

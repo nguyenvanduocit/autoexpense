@@ -41,7 +41,6 @@ async function loadApiKey() {
   if (!userId) return;
 
   try {
-    const apiKeyRef = doc(db, `users/${userId}/settings/openAIKey`);
     const docSnap = await getDocs(collection(db, `users/${userId}/settings`));
     docSnap.forEach(doc => {
       if (doc.id === 'openAIKey') {

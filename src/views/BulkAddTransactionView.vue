@@ -14,7 +14,7 @@ const db = useFirestore();
 const userId = auth.currentUser?.uid;
 
 // Get user vehicles
-const { data: vehiclesCollection, pending: vehiclesPending } = useCollection<Vehicle>(
+const { data: vehiclesCollection } = useCollection<Vehicle>(
   collection(db, `users/${userId}/vehicles`)
 );
 
