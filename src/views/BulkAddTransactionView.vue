@@ -1,0 +1,298 @@
+<script setup lang="ts">
+import { ref, computed } from "vue";
+import { useRouter } from "vue-router";
+import { useFirestore } from "vuefire";
+import { collection } from "firebase/firestore";
+import { useCollection } from "vuefire";
+import { auth } from "../config/firebase";
+import { transactionService } from "../services/transaction.service";
+import { Transaction, Vehicle } from "../types";
+import { RouterLink } from "vue-router";
+
+const router = useRouter();
+const db = useFirestore();
+const userId = auth.currentUser?.uid;
+
+// Get user vehicles
+const vehicles = useCollection<Vehicle>(
+  collection(db, `users/${userId}/vehicles`)
+);
+
+// States
+const transactionText = ref<string>("");
+const parsedTransactions = ref<Transaction[]>([]);
+const isSubmitting = ref<boolean>(false);
+const isParsingLoading = ref<boolean>(false);
+const error = ref<string>("");
+const successMessage = ref<string>("");
+
+// Formatting functions
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(amount);
+};
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString("en-US");
+};
+
+// Computed properties
+const isParseDisabled = computed(() => {
+  return !transactionText.value.trim();
+});
+
+const isAddDisabled = computed(() => {
+  return !parsedTransactions.value.length ||
+    !vehicles.value?.length ||
+    parsedTransactions.value.some(t => !t.vehicleId);
+});
+
+const showAddVehiclePrompt = computed(() =>
+  !vehicles.value || vehicles.value.length === 0
+);
+
+// Methods
+const parseTransactions = async () => {
+  error.value = "";
+  if (!transactionText.value.trim()) {
+    error.value = "Please enter transaction text";
+    return;
+  }
+
+  isParsingLoading.value = true;
+
+  try {
+    const parsed = await transactionService.parseTransactions(transactionText.value);
+
+    // Clear previous transactions
+    parsedTransactions.value = [];
+
+    // Map parsed transactions to our format
+    parsedTransactions.value = parsed.map(item => ({
+      id: "", // Will be assigned by Firestore
+      description: item.description,
+      amount: item.amount,
+      date: item.date,
+      category: item.category,
+      vehicleId: vehicles.value?.length === 1 ? vehicles.value[0].id : "",
+    }));
+
+  } catch (err: any) {
+    error.value = err.message || "Could not identify any transactions";
+  } finally {
+    isParsingLoading.value = false;
+  }
+};
+
+const updateVehicle = (transaction: Transaction, vehicleId: string) => {
+  const index = parsedTransactions.value.findIndex(t =>
+    t.description === transaction.description &&
+    t.amount === transaction.amount &&
+    t.date === transaction.date
+  );
+
+  if (index !== -1) {
+    parsedTransactions.value[index].vehicleId = vehicleId;
+  }
+};
+
+const saveTransactions = async () => {
+  error.value = "";
+  successMessage.value = "";
+
+  // Check if all transactions have a vehicle assigned
+  if (parsedTransactions.value.some(t => !t.vehicleId)) {
+    error.value = "All transactions must have a vehicle assigned";
+    return;
+  }
+
+  isSubmitting.value = true;
+
+  try {
+    await transactionService.addBulkTransactions(parsedTransactions.value);
+    successMessage.value = "Transactions successfully added";
+
+    // Clear form after successful submission
+    setTimeout(() => {
+      router.push("/");
+    }, 1500);
+  } catch (err: any) {
+    error.value = err.message || "Error saving transactions";
+  } finally {
+    isSubmitting.value = false;
+  }
+};
+</script>
+
+<template>
+  <div class="p-6 max-w-5xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold">Thêm giao dịch hàng loạt</h1>
+      <button @click="router.back()" class="text-gray-600 hover:text-gray-900">
+        ← Quay lại
+      </button>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+      <!-- Transaction input form -->
+      <div class="mb-6">
+        <label for="transaction-text" class="block text-sm font-medium text-gray-700 mb-2">
+          Nhập giao dịch bằng ngôn ngữ tự nhiên
+        </label>
+        <textarea id="transaction-text" v-model="transactionText" rows="6"
+          placeholder="Ví dụ: Ăn trưa ở Subway 12.500đ hôm qua"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+        <div class="mt-2 text-sm text-gray-500">
+          Nhập mỗi giao dịch trên một dòng hoặc trong một đoạn văn. Bao gồm mô tả, số tiền và ngày bằng ngôn ngữ tự
+          nhiên.
+        </div>
+      </div>
+
+      <!-- Parse button -->
+      <div class="mb-6">
+        <button @click="parseTransactions" :disabled="isParseDisabled || isParsingLoading"
+          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+          <span v-if="isParsingLoading" class="inline-block mr-2">
+            <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+              viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+              </path>
+            </svg>
+          </span>
+          Phân tích giao dịch
+        </button>
+      </div>
+
+      <!-- Add vehicle prompt -->
+      <div v-if="showAddVehiclePrompt" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+              fill="currentColor">
+              <path fill-rule="evenodd"
+                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm text-yellow-700">
+              Bạn cần thêm một xe trước khi thêm giao dịch.
+              <RouterLink to="/vehicles/add" class="font-medium underline text-yellow-700 hover:text-yellow-600">
+                Thêm xe mới
+              </RouterLink>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error message -->
+      <div v-if="error" class="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+              fill="currentColor">
+              <path fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm text-red-700">{{ error }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Success message -->
+      <div v-if="successMessage" class="bg-green-50 border-l-4 border-green-400 p-4 mb-6">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+              fill="currentColor">
+              <path fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm text-green-700">{{ successMessage }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Parsed transactions table -->
+      <div v-if="parsedTransactions.length" class="mb-6">
+        <h2 class="text-lg font-medium mb-4">Giao dịch đã phân tích</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Mô tả
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Số tiền
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Ngày
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Danh mục
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Xe
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr v-for="transaction in parsedTransactions" :key="transaction.description + transaction.amount">
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ transaction.description }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ formatCurrency(transaction.amount) }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ formatDate(transaction.date) }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {{ transaction.category }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <select v-model="transaction.vehicleId"
+                    @change="(e) => updateVehicle(transaction, (e.target as HTMLSelectElement).value)"
+                    class="border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="" disabled>Chọn xe</option>
+                    <option v-for="vehicle in vehicles" :key="vehicle.id" :value="vehicle.id">
+                      {{ vehicle.licensePlate }} ({{ vehicle.brand }} {{ vehicle.model }})
+                    </option>
+                  </select>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Add transactions button -->
+      <div class="flex justify-end">
+        <button @click="saveTransactions" :disabled="isAddDisabled || isSubmitting"
+          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed">
+          <span v-if="isSubmitting" class="inline-block mr-2">
+            <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+              viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+              </path>
+            </svg>
+          </span>
+          Thêm giao dịch
+        </button>
+      </div>
+    </div>
+  </div>
+</template>

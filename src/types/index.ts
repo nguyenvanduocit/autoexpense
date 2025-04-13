@@ -3,23 +3,35 @@ export interface Transaction {
   amount: number;
   date: string;
   description: string;
-  category: ExpenseCategory;
+  category: TransactionCategory;
   vehicleId: string;
+  transactionType: TransactionType;
   attachments?: string[];
 }
 
 export type TimeRange = "week" | "month" | "quarter" | "all";
 
-export enum ExpenseCategory {
+export enum TransactionType {
+  Income = "Income",
+  Expense = "Expense"
+}
+
+export enum TransactionCategory {
   Fuel = "Fuel",
   Maintenance = "Maintenance",
   Insurance = "Insurance",
   Toll = "Toll",
   Parking = "Parking",
   Wash = "Wash",
-  Accessories = "Accessories", // Thêm mục thiết bị độ xe
-  Fine = "Fine", // Thêm mục bị phạt
+  Accessories = "Accessories",
+  Fine = "Fine",
   Other = "Other",
+  ServiceCharge = "ServiceCharge",
+  // Income categories
+  Sale = "Sale",
+  Rental = "Rental",
+  Refund = "Refund",
+  Compensation = "Compensation",
 }
 
 export interface Vehicle {
@@ -32,8 +44,13 @@ export interface Vehicle {
 
 export interface DashboardStats {
   totalExpenses: number;
+  totalIncome: number;
+  netBalance: number;
   monthlyExpenses: number;
-  expensesByCategory: Record<ExpenseCategory, number>;
+  monthlyIncome: number;
+  monthlyNetBalance: number;
+  expensesByCategory: Record<TransactionCategory, number>;
+  incomeByCategory: Record<TransactionCategory, number>;
   recentTransactions: Transaction[];
   upcomingReminders: Reminder[];
 }

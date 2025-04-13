@@ -19,6 +19,7 @@ const navigateTo = (path: string) => {
 
 const navItems = [
   { path: '/transactions/add', text: '+ Thêm giao dịch', variant: 'primary' },
+  { path: '/transactions/bulk-add', text: '+ Nhập nhiều giao dịch', variant: 'primary' },
   { path: '/settings', text: 'Cài đặt', variant: 'secondary', icon: 'settings' }
 ];
 </script>

@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useFirestore } from 'vuefire'
 import { collection, addDoc } from 'firebase/firestore'
-import { ExpenseCategory } from '../../types'
+import { TransactionCategory } from '../../types'
 import { auth } from '../../config/firebase'
 import { convertAmount } from '../../utils/currency'
 
@@ -19,15 +19,15 @@ const db = useFirestore()
 const userId = auth.currentUser?.uid
 
 const amount = ref('')
-const category = ref<ExpenseCategory>(ExpenseCategory.Fuel)
+const category = ref<TransactionCategory>(TransactionCategory.Fuel)
 const date = ref(new Date().toISOString().split('T')[0])
 
-const categories: ExpenseCategory[] = [
-  ExpenseCategory.Fuel,
-  ExpenseCategory.Maintenance,
-  ExpenseCategory.Insurance,
-  ExpenseCategory.Parking,
-  ExpenseCategory.Other
+const categories: TransactionCategory[] = [
+  TransactionCategory.Fuel,
+  TransactionCategory.Maintenance,
+  TransactionCategory.Insurance,
+  TransactionCategory.Parking,
+  TransactionCategory.Other
 ]
 
 const handleAmountBlur = (event: Event) => {

@@ -12,7 +12,7 @@ import {
   TransformComponent
 } from 'echarts/components'
 import VChart from 'vue-echarts'
-import type { ExpenseCategory } from '../types'
+import type { TransactionCategory, TransactionType } from '../types'
 import TimeRangeFilter from './TimeRangeFilter.vue'
 import type { TimeRange } from '../types'
 use([
@@ -31,7 +31,8 @@ const props = defineProps<{
     id: string
     amount: number
     date: string
-    category: ExpenseCategory
+    category: TransactionCategory
+    transactionType?: TransactionType
   }>
 }>()
 
@@ -68,34 +69,81 @@ const filteredTransactions = computed(() => {
 })
 
 const chartData = computed(() => {
-  const categories = [...new Set(props.transactions.map(t => t.category))]
-  const dateMap = new Map<string, Record<ExpenseCategory, number>>()
+  // Group by transaction type and category
+  const incomeTransactions = filteredTransactions.value.filter(t =>
+    t.transactionType === 'Income' || (!t.transactionType && t.amount > 0)
+  )
 
-  filteredTransactions.value
-    .filter(transaction => transaction && transaction.date && transaction.category)
-    .forEach(transaction => {
-      const date = new Date(transaction.date).toLocaleDateString(navigator.language)
-      const existing = dateMap.get(date) || Object.fromEntries(
-        categories.map(c => [c, 0])
-      ) as Record<ExpenseCategory, number>
-      
-      existing[transaction.category] += transaction.amount || 0
-      dateMap.set(date, existing)
-    })
+  const expenseTransactions = filteredTransactions.value.filter(t =>
+    t.transactionType === 'Expense' || (!t.transactionType && t.amount < 0)
+  )
 
-  const dates = Array.from(dateMap.keys())
-  
-  return categories.map(category => ({
-    name: category,
+  // Get all dates for the x-axis
+  const dateSet = new Set<string>()
+  filteredTransactions.value.forEach(t => {
+    if (t && t.date) {
+      dateSet.add(new Date(t.date).toLocaleDateString(navigator.language))
+    }
+  })
+  const dates = Array.from(dateSet).sort((a, b) =>
+    new Date(a).getTime() - new Date(b).getTime()
+  )
+
+  // Process income by date
+  const incomeSeries = {
+    name: 'Thu nhập',
     type: 'line',
-    connectNulls: true,
+    stack: 'total',
+    areaStyle: {},
+    emphasis: { focus: 'series' },
+    lineStyle: { width: 2 },
+    itemStyle: { color: '#34D399' }, // Green color
     data: dates.map(date => {
-      const categoryData = dateMap.get(date)
-      if (!categoryData) return null
-      const value = categoryData[category]
-      return value > 0 ? value : null
+      const dayIncome = incomeTransactions
+        .filter(t => new Date(t.date).toLocaleDateString(navigator.language) === date)
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+      return dayIncome || 0
     })
-  }))
+  }
+
+  // Process expense by date
+  const expenseSeries = {
+    name: 'Chi phí',
+    type: 'line',
+    stack: 'total',
+    areaStyle: {},
+    emphasis: { focus: 'series' },
+    lineStyle: { width: 2 },
+    itemStyle: { color: '#F87171' }, // Red color
+    data: dates.map(date => {
+      const dayExpense = expenseTransactions
+        .filter(t => new Date(t.date).toLocaleDateString(navigator.language) === date)
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+      return dayExpense || 0
+    })
+  }
+
+  // Process net balance by date
+  const balanceSeries = {
+    name: 'Số dư',
+    type: 'line',
+    emphasis: { focus: 'series' },
+    lineStyle: { width: 3, type: 'dashed' },
+    itemStyle: { color: '#60A5FA' }, // Blue color
+    data: dates.map(date => {
+      const dayIncome = incomeTransactions
+        .filter(t => new Date(t.date).toLocaleDateString(navigator.language) === date)
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+
+      const dayExpense = expenseTransactions
+        .filter(t => new Date(t.date).toLocaleDateString(navigator.language) === date)
+        .reduce((sum, t) => sum + Math.abs(t.amount), 0)
+
+      return dayIncome - dayExpense
+    })
+  }
+
+  return [incomeSeries, expenseSeries, balanceSeries]
 })
 
 const chartOption = computed(() => ({
@@ -103,7 +151,7 @@ const chartOption = computed(() => ({
     trigger: 'axis',
     formatter: (params: any) => {
       if (!params || !params.length) return ''
-      
+
       let result = `${params[0].axisValue}<br/>`
       params.forEach((param: any) => {
         if (param && param.value !== null) {
@@ -114,7 +162,7 @@ const chartOption = computed(() => ({
     }
   },
   legend: {
-    data: [...new Set(props.transactions.map(t => t.category))],
+    data: ['Thu nhập', 'Chi phí', 'Số dư'],
     orient: 'horizontal',
     top: 0
   },
@@ -130,7 +178,7 @@ const chartOption = computed(() => ({
     data: Array.from(new Set(filteredTransactions.value
       .filter(t => t && t.date)
       .map(t => new Date(t.date).toLocaleDateString(navigator.language))
-    ))
+    )).sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
   },
   yAxis: {
     type: 'value'
@@ -141,10 +189,11 @@ const chartOption = computed(() => ({
 
 <template>
   <div class="expense-timeline">
-    <div class="p-4">
+    <div class="p-4 flex items-center justify-between">
+      <h3 class="text-lg font-medium">Biểu đồ thu chi theo thời gian</h3>
       <TimeRangeFilter v-model="timeRange" />
     </div>
-    
+
     <v-chart class="chart" :option="chartOption" autoresize />
   </div>
 </template>

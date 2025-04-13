@@ -14,6 +14,12 @@ const router = createRouter({
       component: () => import("../views/AddTransactionView.vue"),
     },
     {
+      path: "/transactions/bulk-add",
+      name: "bulk-add-transaction",
+      component: () => import("../views/BulkAddTransactionView.vue"),
+      meta: { requiresAuth: true },
+    },
+    {
       path: "/transactions/:id",
       name: "transaction-details",
       component: () => import("../views/TransactionDetailsView.vue"),

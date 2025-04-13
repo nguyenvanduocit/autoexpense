@@ -6,6 +6,7 @@ import { doc, deleteDoc } from 'firebase/firestore'
 import { useFirestore } from 'vuefire'
 import { auth } from "../config/firebase";
 import type { Transaction, Vehicle } from "../types";
+import { TransactionType } from "../types";
 
 const route = useRoute();
 const router = useRouter();
@@ -63,12 +64,8 @@ const handleDelete = async () => {
             </h2>
             <p class="text-gray-500 mt-1">{{ formatDate(transaction.date) }}</p>
           </div>
-          <div
-            :class="{
-              'text-red-600': true,
-            }"
-            class="text-2xl font-bold"
-          >
+          <div class="text-2xl font-bold"
+            :class="transaction.transactionType === TransactionType.Expense ? 'text-red-600' : 'text-green-600'">
             {{ formatCurrency(transaction.amount) }}
           </div>
         </div>
@@ -76,7 +73,17 @@ const handleDelete = async () => {
 
       <!-- Details -->
       <div class="p-6 space-y-4">
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-3 gap-4">
+          <div>
+            <h3 class="text-sm font-medium text-gray-500">Loại giao dịch</h3>
+            <p class="mt-1">
+              <span
+                :class="transaction.transactionType === TransactionType.Expense ? 'text-red-600' : 'text-green-600'">
+                {{ transaction.transactionType }}
+              </span>
+            </p>
+          </div>
+
           <div>
             <h3 class="text-sm font-medium text-gray-500">Danh mục</h3>
             <p class="mt-1">{{ transaction.category }}</p>
@@ -100,16 +107,11 @@ const handleDelete = async () => {
       <!-- Actions -->
       <div class="p-6 bg-gray-50 rounded-b-lg">
         <div class="flex justify-end space-x-4">
-          <button
-            @click="handleDelete"
-            class="px-4 py-2 text-red-600 hover:text-red-700 font-medium"
-          >
+          <button @click="handleDelete" class="px-4 py-2 text-red-600 hover:text-red-700 font-medium">
             Xóa
           </button>
-          <button
-            @click="router.push(`/transactions/${transaction.id}/edit`)"
-            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
+          <button @click="router.push(`/transactions/${transaction.id}/edit`)"
+            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
             Chỉnh sửa
           </button>
         </div>

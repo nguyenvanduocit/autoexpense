@@ -12,7 +12,7 @@ import {
   TransformComponent
 } from 'echarts/components'
 import VChart from 'vue-echarts'
-import type { ExpenseCategory } from '../types'
+import type { TransactionCategory, TransactionType } from '../types'
 import TimeRangeFilter from './TimeRangeFilter.vue'
 import type { TimeRange } from '../types'
 use([
@@ -32,11 +32,13 @@ const props = defineProps<{
     amount: number
     date: string
     description: string
-    category: ExpenseCategory
+    category: TransactionCategory
+    transactionType?: TransactionType
   }>
 }>()
 
 const timeRange = ref<TimeRange>('month')
+const chartType = ref<'income' | 'expense'>('expense')
 
 const filteredTransactions = computed(() => {
   const now = new Date()
@@ -58,21 +60,53 @@ const filteredTransactions = computed(() => {
   }
 })
 
-const chartData = computed(() => {
-  const categoryTotals = new Map<string, number>()
-  
-  filteredTransactions.value.forEach(transaction => {
-    const currentTotal = categoryTotals.get(transaction.category) || 0
-    categoryTotals.set(transaction.category, currentTotal + transaction.amount)
-  })
-
-  return Array.from(categoryTotals.entries()).map(([category, total]) => ({
-    name: category,
-    value: total
-  }))
+const incomeTransactions = computed(() => {
+  return filteredTransactions.value.filter(t =>
+    t.transactionType === 'Income' || (!t.transactionType && t.amount > 0)
+  )
 })
 
+const expenseTransactions = computed(() => {
+  return filteredTransactions.value.filter(t =>
+    t.transactionType === 'Expense' || (!t.transactionType && t.amount < 0)
+  )
+})
+
+const chartData = computed(() => {
+  const transactions = chartType.value === 'income'
+    ? incomeTransactions.value
+    : expenseTransactions.value
+
+  const categoryTotals = new Map<string, number>()
+
+  transactions.forEach(transaction => {
+    const currentTotal = categoryTotals.get(transaction.category) || 0
+    categoryTotals.set(transaction.category, currentTotal + Math.abs(transaction.amount))
+  })
+
+  return Array.from(categoryTotals.entries())
+    .filter(([_, total]) => total > 0)
+    .map(([category, total]) => ({
+      name: category,
+      value: total
+    }))
+})
+
+const chartTitle = computed(() =>
+  chartType.value === 'income' ? 'Thu nhập theo danh mục' : 'Chi phí theo danh mục'
+)
+
+const chartColors = computed(() =>
+  chartType.value === 'income'
+    ? ['#34D399', '#10B981', '#059669', '#047857', '#065F46', '#064E3B'] // Green colors
+    : ['#F87171', '#EF4444', '#DC2626', '#B91C1C', '#991B1B', '#7F1D1D'] // Red colors
+)
+
 const chartOption = computed(() => ({
+  title: {
+    text: chartTitle.value,
+    left: 'center'
+  },
   tooltip: {
     trigger: 'item',
     formatter: '{b}: {c} VND ({d}%)'
@@ -80,32 +114,60 @@ const chartOption = computed(() => ({
   legend: {
     orient: 'horizontal',
     left: 'center',
-    top: 'top'
+    top: 'bottom'
   },
+  color: chartColors.value,
   series: [
     {
-      name: 'Chi phí theo danh mục',
+      name: chartTitle.value,
       type: 'pie',
-      radius: '50%',
-      data: chartData.value,
+      radius: ['40%', '70%'], // Donut chart
+      avoidLabelOverlap: true,
+      itemStyle: {
+        borderRadius: 10,
+        borderColor: '#fff',
+        borderWidth: 2
+      },
+      label: {
+        show: false,
+        position: 'center'
+      },
       emphasis: {
-        itemStyle: {
-          shadowBlur: 10,
-          shadowOffsetX: 0,
-          shadowColor: 'rgba(0, 0, 0, 0.5)'
+        label: {
+          show: true,
+          fontSize: '18',
+          fontWeight: 'bold'
         }
-      }
+      },
+      labelLine: {
+        show: false
+      },
+      data: chartData.value
     }
   ]
 }))
+
+const toggleChartType = () => {
+  chartType.value = chartType.value === 'income' ? 'expense' : 'income'
+}
 </script>
 
 <template>
   <div class="expense-analysis">
-    <div class="p-4">
+    <div class="p-4 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <button @click="toggleChartType" class="px-3 py-1 rounded-md text-sm font-medium"
+          :class="chartType === 'expense' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'">
+          Chi phí
+        </button>
+        <button @click="toggleChartType" class="px-3 py-1 rounded-md text-sm font-medium"
+          :class="chartType === 'income' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'">
+          Thu nhập
+        </button>
+      </div>
       <TimeRangeFilter v-model="timeRange" />
     </div>
-    
+
     <v-chart class="chart" :option="chartOption" autoresize />
   </div>
 </template>

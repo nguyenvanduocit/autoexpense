@@ -4,7 +4,7 @@ import { useCollection } from 'vuefire'
 import { collection, deleteDoc, doc, query, where, getDocs } from 'firebase/firestore'
 import { useFirestore } from 'vuefire'
 import { useStorage } from '@vueuse/core'
-import type { Transaction, DashboardStats, ExpenseCategory, Vehicle, Reminder } from "../types";
+import type { Transaction, DashboardStats, TransactionCategory, Vehicle, Reminder } from "../types";
 import { useRouter } from "vue-router";
 import { auth } from "../config/firebase";
 
@@ -57,8 +57,13 @@ const itemsPerPage = 5;
 const stats = computed<DashboardStats>(() => {
   if (!filteredTransactions.value) return {
     totalExpenses: 0,
+    totalIncome: 0,
+    netBalance: 0,
     monthlyExpenses: 0,
-    expensesByCategory: {} as Record<ExpenseCategory, number>,
+    monthlyIncome: 0,
+    monthlyNetBalance: 0,
+    expensesByCategory: {} as Record<TransactionCategory, number>,
+    incomeByCategory: {} as Record<TransactionCategory, number>,
     recentTransactions: [],
     upcomingReminders: [],
   }
@@ -66,20 +71,64 @@ const stats = computed<DashboardStats>(() => {
   const currentMonth = new Date().getMonth()
   const currentYear = new Date().getFullYear()
 
+  // Filter transactions by type
+  const incomeTransactions = filteredTransactions.value.filter(t =>
+    t.transactionType === 'Income' || (t.amount > 0 && !t.transactionType)
+  )
+
+  const expenseTransactions = filteredTransactions.value.filter(t =>
+    t.transactionType === 'Expense' || (t.amount < 0 && !t.transactionType)
+  )
+
+  // Calculate monthly transactions
+  const monthlyIncomeTransactions = incomeTransactions.filter(t => {
+    const date = new Date(t.date)
+    return date.getMonth() === currentMonth && date.getFullYear() === currentYear
+  })
+
+  const monthlyExpenseTransactions = expenseTransactions.filter(t => {
+    const date = new Date(t.date)
+    return date.getMonth() === currentMonth && date.getFullYear() === currentYear
+  })
+
+  // Calculate totals
+  const totalIncome = incomeTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0)
+  const totalExpenses = expenseTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0)
+  const monthlyIncome = monthlyIncomeTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0)
+  const monthlyExpenses = monthlyExpenseTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0)
+
+  // Calculate expenses by category
+  const expensesByCategory = {} as Record<TransactionCategory, number>
+  expenseTransactions.forEach(t => {
+    if (!expensesByCategory[t.category]) {
+      expensesByCategory[t.category] = 0
+    }
+    expensesByCategory[t.category] += Math.abs(t.amount)
+  })
+
+  // Calculate income by category
+  const incomeByCategory = {} as Record<TransactionCategory, number>
+  incomeTransactions.forEach(t => {
+    if (!incomeByCategory[t.category]) {
+      incomeByCategory[t.category] = 0
+    }
+    incomeByCategory[t.category] += Math.abs(t.amount)
+  })
+
   return {
-    totalExpenses: filteredTransactions.value.reduce((sum: number, t: Transaction) => sum + t.amount, 0),
-    monthlyExpenses: filteredTransactions.value
-      .filter((t: Transaction) => {
-        const date = new Date(t.date)
-        return date.getMonth() === currentMonth && date.getFullYear() === currentYear
-      })
-      .reduce((sum: number, t: Transaction) => sum + t.amount, 0),
-    expensesByCategory: {} as Record<ExpenseCategory, number>,
+    totalExpenses,
+    totalIncome,
+    netBalance: totalIncome - totalExpenses,
+    monthlyExpenses,
+    monthlyIncome,
+    monthlyNetBalance: monthlyIncome - monthlyExpenses,
+    expensesByCategory,
+    incomeByCategory,
     recentTransactions: filteredTransactions.value
-      .sort((a: Transaction, b: Transaction) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     upcomingReminders: reminders.value
       ?.filter((r: Reminder) => !r.isCompleted && new Date(r.dueDate) > new Date())
-      .sort((a: Reminder, b: Reminder) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
       .slice(0, 3) || [],
   }
 })
@@ -96,7 +145,7 @@ const confirmDelete = async () => {
   if (!vehicleToDelete.value) return
   
   try {
-    // 1. Xóa tất cả transactions của vehicle này
+    // Delete all transactions for this vehicle
     const vehicleTransactionsRef = collection(db, `users/${userId}/transactions`)
     const q = query(vehicleTransactionsRef, where("vehicleId", "==", vehicleToDelete.value.id))
     const querySnapshot = await getDocs(q)
@@ -106,7 +155,7 @@ const confirmDelete = async () => {
     )
     await Promise.all(deletePromises)
 
-    // 2. Xóa vehicle
+    // Delete the vehicle
     await deleteDoc(doc(db, `users/${userId}/vehicles/${vehicleToDelete.value.id}`))
     
     showDeleteDialog.value = false
@@ -125,7 +174,7 @@ const handlePageUpdate = (page: number) => {
 };
 
 const handleTransactionAdded = () => {
-  // Data sẽ tự động cập nhật nhờ vào VueFire
+  // Data will automatically update thanks to VueFire
 }
 </script>
 
