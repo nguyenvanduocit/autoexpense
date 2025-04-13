@@ -82,9 +82,11 @@ const chartData = computed(() => {
     const date = new Date(transaction.date).toISOString().split('T')[0]
     const currentTotal = dailyTotals.get(date) || 0
 
-    // For all transactions, use absolute value for better visualization
-    const amount = transaction.transactionType === TransactionType.Expense ?
-      Math.abs(transaction.amount) : transaction.amount
+    // For "all" mode, use net value (positive for income, negative for expense)
+    // For individual modes, keep using absolute values
+    const amount = viewMode.value === 'all'
+      ? (transaction.transactionType === TransactionType.Expense ? -Math.abs(transaction.amount) : transaction.amount)
+      : (transaction.transactionType === TransactionType.Expense ? Math.abs(transaction.amount) : transaction.amount)
 
     dailyTotals.set(date, currentTotal + amount)
   })
@@ -110,7 +112,7 @@ const maxValue = computed(() => {
 
   const values = chartData.value.map(item => {
     const value = Number(item[1])
-    return isNaN(value) ? 0 : value
+    return isNaN(value) ? 0 : Math.abs(value) // Use absolute value for calculation
   })
   return Math.max(...values, 1000) // Ensure we have a minimum max value
 })
@@ -122,7 +124,7 @@ const colorRange = computed(() => {
     case 'expense':
       return ['#ebedf0', '#fcae91', '#fb6a4a', '#de2d26', '#a50f15'] // Red shades
     default:
-      return ['#ebedf0', '#9ecae1', '#3182bd', '#08519c', '#082850'] // Blue shades
+      return ['#a50f15', '#de2d26', '#ebedf0', '#7bc96f', '#196127'] // Red to Green for net values
   }
 })
 
@@ -138,6 +140,8 @@ const chartTitle = computed(() => {
 })
 
 const chartOption = computed(() => {
+  const isAllMode = viewMode.value === 'all'
+
   return {
     title: {
       text: chartTitle.value,
@@ -149,18 +153,21 @@ const chartOption = computed(() => {
         if (!params.value) return '';
 
         const value = params.value[1]
-        const formattedValue = value.toLocaleString('vi-VN')
+        const formattedValue = Math.abs(value).toLocaleString('vi-VN')
+
         if (viewMode.value === 'income') {
           return `${params.value[0]}<br/>Income: ${formattedValue} VND`
         } else if (viewMode.value === 'expense') {
           return `${params.value[0]}<br/>Expense: ${formattedValue} VND`
         } else {
-          return `${params.value[0]}<br/>Activity: ${formattedValue} VND`
+          // For "all" mode, show whether it's income or expense based on the value
+          const label = value >= 0 ? 'Net Income' : 'Net Expense'
+          return `${params.value[0]}<br/>${label}: ${formattedValue} VND`
         }
       }
     },
     visualMap: {
-      min: 0,
+      min: isAllMode ? -maxValue.value : 0,
       max: maxValue.value,
       calculable: true,
       orient: 'horizontal',
@@ -223,7 +230,7 @@ const chartOption = computed(() => {
 <style scoped>
 .expense-heatmap {
   width: 100%;
-  height: 300px;
+  height: 370px;
   padding-top: 1rem;
 }
 

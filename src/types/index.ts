@@ -25,13 +25,10 @@ export enum TransactionCategory {
   Wash = "Wash",
   Accessories = "Accessories",
   Fine = "Fine",
+  LoadingFee = "LoadingFee",
+  BrokerageFee = "BrokerageFee",
   Other = "Other",
-  ServiceCharge = "ServiceCharge",
-  // Income categories
-  Sale = "Sale",
-  Rental = "Rental",
-  Refund = "Refund",
-  Compensation = "Compensation",
+  ServiceIncome = "ServiceIncome",
 }
 
 export interface Vehicle {

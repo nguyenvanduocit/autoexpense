@@ -1,4 +1,4 @@
-import { TransactionCategory, Transaction } from "../types";
+import { TransactionCategory, Transaction, TransactionType } from "../types";
 import { collection, addDoc, doc, getDoc } from "firebase/firestore";
 import { db, auth } from "../config/firebase";
 
@@ -7,6 +7,7 @@ interface ParsedTransaction {
   amount: number;
   date: string;
   category: TransactionCategory;
+  transactionType: TransactionType;
 }
 
 // Helper function to normalize transaction data
@@ -33,11 +34,23 @@ const normalizeTransaction = (item: any): ParsedTransaction => {
     category = TransactionCategory.Other;
   }
 
+  // Determine transaction type (default to Expense if not specified)
+  let transactionType = item.transactionType as TransactionType;
+  if (!Object.values(TransactionType).includes(transactionType)) {
+    // Infer transaction type from category if possible
+    if ([TransactionCategory.ServiceIncome].includes(category)) {
+      transactionType = TransactionType.Income;
+    } else {
+      transactionType = TransactionType.Expense;
+    }
+  }
+
   return {
     description: item.description,
     amount: parseFloat(item.amount.toString().replace(/[$,]/g, '')),
     date: date.toISOString().split('T')[0],
-    category
+    category,
+    transactionType
   };
 };
 
@@ -72,11 +85,11 @@ export const transactionService = {
           'Authorization': `Bearer ${effectiveApiKey}`
         },
         body: JSON.stringify({
-          model: "gpt-3.5-turbo",
+          model: "gpt-4o",
           messages: [
             {
               role: "system",
-              content: `Parse the following text into structured transaction data. Extract description, amount (in vietnamese dong), date (relative to today), and category (must be one of: ${Object.values(TransactionCategory).join(", ")}). Return JSON array even if there is only one transaction.`
+              content: `Parse the following text into structured transaction data. Extract description, amount (in vietnamese dong), date (relative to today), category (must be one of: ${Object.values(TransactionCategory).join(", ")}), and transaction type (must be one of: ${Object.values(TransactionType).join(", ")}). Return JSON array even if there is only one transaction.`
             },
             {
               role: "user",

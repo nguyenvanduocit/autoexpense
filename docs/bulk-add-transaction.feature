@@ -26,8 +26,9 @@ Feature: AI-Assisted Bulk Transaction Entry
   Scenario: Adding parsed transactions to the database
     Given the user has successfully parsed transaction text
     And the parsed transactions are displayed in the table
-    When the user clicks the "Add Transactions" button
-    Then the transactions should be saved to the database
+    When the user selects "Family Car" from the vehicle dropdown
+    And the user clicks the "Add Transactions" button
+    Then all transactions should be saved to the database with the selected vehicle
     And the user should see a success message "Transactions successfully added"
     And the user should be redirected to the home page
 
@@ -79,10 +80,16 @@ Feature: AI-Assisted Bulk Transaction Entry
     When the user clicks the back button
     Then the user should return to the previous page without saving the transactions
 
+  Scenario: Changing the vehicle selection for all transactions
+    Given the user has successfully parsed transaction text
+    And the parsed transactions are displayed in the table
+    When the user selects "Work Vehicle" from the vehicle dropdown
+    Then the selected vehicle should be applied to all displayed transactions
+
   Scenario: No vehicles available for transaction assignment
     Given the user has successfully parsed transaction text
     And the user has no vehicles added to their account
-    Then the user should see a prompt to add a vehicle
+    Then the user should see a message "No vehicles available for transaction assignment"
     And the user should see a link to "Add new vehicle"
     When the user clicks on "Add new vehicle"
     Then the user should be redirected to the vehicle addition page
