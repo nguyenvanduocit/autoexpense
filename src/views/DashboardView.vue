@@ -15,17 +15,14 @@ import RecentTransactions from "../components/dashboard/RecentTransactions.vue";
 import DeleteVehicleDialog from "../components/dashboard/DeleteVehicleDialog.vue";
 import NoVehiclesMessage from "../components/dashboard/NoVehiclesMessage.vue";
 import NoTransactionsMessage from "../components/dashboard/NoTransactionsMessage.vue";
-import QuickTransactionForm from "../components/dashboard/QuickTransactionForm.vue";
 
 // Lazy load chart components
 const ExpenseTimelineChart = defineAsyncComponent(() => 
   import("../components/ExpenseTimelineChart.vue")
 );
+
 const ExpenseAnalysisChart = defineAsyncComponent(() => 
   import("../components/ExpenseAnalysisChart.vue")
-);
-const ExpenseHeatmapChart = defineAsyncComponent(() => 
-  import("../components/ExpenseHeatmapChart.vue")
 );
 
 const router = useRouter();
@@ -196,11 +193,8 @@ const handleTransactionAdded = () => {
       <StatsCards :stats="stats" />
 
       <!-- Vehicle Filter -->
-      <VehicleFilter
-        :vehicles="vehicles"
-        v-model:selectedVehicleId="selectedVehicle"
-        @deleteVehicle="handleDeleteVehicle"
-      />
+      <VehicleFilter :vehicles="vehicles" v-model:selectedVehicleId="selectedVehicle"
+        @deleteVehicle="handleDeleteVehicle" />
 
       <!-- No transactions message -->
       <NoTransactionsMessage v-if="!transactions.length" />
@@ -224,31 +218,14 @@ const handleTransactionAdded = () => {
         <div class="bg-white rounded-lg shadow w-full mb-8">
           <ExpenseHeatmapChart :transactions="filteredTransactions" />
         </div>
-
-        <!-- Quick Transaction Form - only show when a vehicle is selected -->
-        <QuickTransactionForm
-          v-if="selectedVehicle"
-          :vehicle-id="selectedVehicle"
-          @added="handleTransactionAdded"
-        />
-
         <!-- Recent Transactions -->
-        <RecentTransactions
-          :transactions="stats.recentTransactions"
-          :current-page="currentPage"
-          :items-per-page="itemsPerPage"
-          @click="navigateToTransaction"
-          @update-page="handlePageUpdate"
-        />
+        <RecentTransactions :transactions="stats.recentTransactions" :current-page="currentPage"
+          :items-per-page="itemsPerPage" @click="navigateToTransaction" @update-page="handlePageUpdate" />
       </template>
     </template>
   </div>
 
   <!-- Delete Confirmation Dialog -->
-  <DeleteVehicleDialog
-    :show="showDeleteDialog"
-    :vehicle="vehicleToDelete"
-    @close="showDeleteDialog = false"
-    @confirm="confirmDelete"
-  />
+  <DeleteVehicleDialog :show="showDeleteDialog" :vehicle="vehicleToDelete" @close="showDeleteDialog = false"
+    @confirm="confirmDelete" />
 </template>

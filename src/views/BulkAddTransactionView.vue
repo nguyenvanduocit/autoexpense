@@ -191,26 +191,14 @@ const saveTransactions = async () => {
       </div>
 
       <!-- Add vehicle prompt -->
-      <div v-if="showAddVehiclePrompt" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-        <div class="flex">
-          <div class="flex-shrink-0">
-            <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
-              fill="currentColor">
-              <path fill-rule="evenodd"
-                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                clip-rule="evenodd" />
-            </svg>
-          </div>
-          <div class="ml-3">
-            <p class="text-sm text-yellow-700">
-              Bạn cần thêm một xe trước khi thêm giao dịch.
-              <RouterLink to="/vehicles/add"
-                class="font-medium underline text-yellow-700 hover:text-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 rounded">
-                Thêm xe mới
-              </RouterLink>
-            </p>
-          </div>
-        </div>
+      <div v-if="showAddVehiclePrompt" class="mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+        <p class="text-yellow-700 mb-3">
+          Bạn cần thêm ít nhất một xe trước khi thêm giao dịch.
+        </p>
+        <RouterLink to="/vehicles/add"
+          class="inline-flex justify-center py-2 px-6 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500">
+          Thêm xe mới
+        </RouterLink>
       </div>
 
       <!-- Error message -->
@@ -315,9 +303,9 @@ const saveTransactions = async () => {
       </div>
 
       <!-- Add transactions button -->
-      <div class="flex justify-end">
+      <div class="flex justify-center">
         <button @click="saveTransactions" :disabled="isAddDisabled || isSubmitting"
-          class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           :aria-busy="isSubmitting ? 'true' : 'false'">
           <span v-if="isSubmitting" class="inline-block mr-2">
             <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"

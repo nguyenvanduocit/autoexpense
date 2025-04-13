@@ -41,7 +41,7 @@ const viewMode = ref<'all' | 'income' | 'expense'>('all')
 const filteredTransactions = computed(() => {
   const now = new Date()
   const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1)
-  
+
   return props.transactions
     .filter(t => t.amount !== null && t.date)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
@@ -238,4 +238,4 @@ const chartOption = computed(() => {
   width: 100%;
   height: 100%;
 }
-</style> 
+</style>
